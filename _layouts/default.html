@@ -50,11 +50,6 @@
   <!-- Navbar -->
   <nav class="navbar is-light is-fixed-top" role="navigation" aria-label="main navigation">
     <div class="navbar-brand">
-      <a class="navbar-item" href="#home">Home</a>
-      <a class="navbar-item" href="#methodology">Methodology</a>
-      <a class="navbar-item" href="#experiments">Experiments</a>
-      <a class="navbar-item" href="#references">References</a>
-
       <!-- Hamburger menu for mobile -->
       <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMenu">
         <span aria-hidden="true"></span>
@@ -64,9 +59,16 @@
     </div>
 
     <div id="navbarMenu" class="navbar-menu">
-      <div class="navbar-end"></div>
+      <div class="navbar-end">
+        <a class="navbar-item" href="#home">Home</a>
+        <a class="navbar-item" href="#methodology">Methodology</a>
+        <a class="navbar-item" href="#experiments">Experiments</a>
+        <a class="navbar-item" href="#references">References</a>
+      </div>
     </div>
   </nav>
+
+  
 
   <!-- Main content with TOC sidebar -->
   <section class="section" style="padding-top: 3.25rem;">
@@ -139,16 +141,23 @@
         tocLinks.push({link, heading: h});
       });
 
-      // Scrollspy: highlight current section
+      // Scrollspy: highlight heading currently at/near top of content
       window.addEventListener('scroll', () => {
+        const scrollPosition = window.scrollY + navbarHeight + 10; // offset
         let current = null;
+
         tocLinks.forEach(({link, heading}) => {
-          const top = heading.getBoundingClientRect().top - navbarHeight - 10;
-          if (top <= 0) current = link;
+          if (heading.offsetTop <= scrollPosition) {
+            current = link; // last heading above scroll position
+          }
         });
+
         tocLinks.forEach(({link}) => link.classList.remove('is-active'));
         if (current) current.classList.add('is-active');
       });
+
+      // Trigger scrollspy on page load in case already scrolled
+      window.dispatchEvent(new Event('scroll'));
     }
   </script>
 </body>
