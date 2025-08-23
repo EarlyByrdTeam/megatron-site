@@ -39,6 +39,13 @@ Datasets:
 
 ![Results Plot](figures/class_distribution_pie_chart_legend.png)
 
+### Experiment 1
+
+In experiment 1, we found that...
+
+### Experiment 2
+In experiment 2, we wanted to investigate the impact of....
+
 ---
 
 ## <a id="references"></a>References
