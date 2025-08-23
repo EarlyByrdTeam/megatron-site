@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ site.title }}</title>
+
+  <!-- Bulma CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+
+  <style>
+    /* Global colors */
+    body { 
+      background: #000; 
+      color: #fff; 
+      scroll-behavior: smooth; /* enables smooth scrolling */
+    }
+    h1, h2, h3, h4, h5, h6 { color: #1e90ff; font-weight: 600; }
+    a { color: #1e90ff; }
+    a:hover { text-decoration: underline; }
+
+    /* Optional: smooth scroll offset for fixed navbar */
+    html { scroll-padding-top: 3.25rem; } 
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar is-dark is-fixed-top">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="#home">Home</a>
+      <a class="navbar-item" href="#methodology">Methodology</a>
+      <a class="navbar-item" href="#experiments">Experiments</a>
+      <a class="navbar-item" href="#references">References</a>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <section class="section container content" style="padding-top: 4rem;">
+    {{ content }}
+  </section>
+
+  <!-- Optional JS for smooth scroll (if needed for older browsers) -->
+  <script>
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.querySelector(this.getAttribute('href')).scrollIntoView({
+          behavior: 'smooth'
+        });
+      });
+    });
+  </script>
+</body>
+</html>
