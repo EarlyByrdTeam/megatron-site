@@ -6,7 +6,6 @@
 
   <!-- Bulma CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-
   <style>
     /* Set body to default Bulma font and colors */
     body {
@@ -18,10 +17,10 @@
     /* Sticky sidebar TOC */
     .toc {
       position: sticky;
-      top: 3.25rem; /* navbar height */
+      top: 8rem; /* navbar height */
       max-height: calc(100vh - 3.25rem);
       overflow-y: auto;
-      padding-right: 1rem;
+      padding-right: 3rem;
     }
 
     .toc a {
@@ -37,13 +36,51 @@
 
     /* Indent subheadings */
     .toc .toc-h2 { margin-left: 0.5rem; }
-    .toc .toc-h3 { margin-left: 1rem; }
+    .toc .toc-h3 { margin-left: 2.5rem; }
+    .toc .toc-h4 { margin-left: 4rem; }
 
     /* Scrollspy active link */
     .toc a.is-active {
       font-weight: bold;
       color: #3273dc;
     }
+  
+  /* --- Heading Numbering for GitHub Pages --- */
+  /* Reset counters at the root */
+  body {
+    counter-reset: h2;
+  }
+
+  /* H2 */
+  h2 {
+    counter-reset: h3;
+  }
+  h2::before {
+    counter-increment: h2;
+    content: counter(h2) ". ";
+  }
+
+  /* H3 */
+  h3 {
+    counter-reset: h4;
+  }
+  h3::before {
+    counter-increment: h3;
+    content: counter(h2) "." counter(h3) " ";
+  }
+
+  /* H4 */
+  h4::before {
+    counter-increment: h4;
+    content: counter(h2) "." counter(h3) "." counter(h4) " ";
+  }
+
+  /* Optional: spacing between number and text */
+  h2::before, h3::before, h4::before {
+    margin-right: 0.3em;
+  }
+
+  
   </style>
 </head>
 <body>
@@ -61,6 +98,7 @@
     <div id="navbarMenu" class="navbar-menu">
       <div class="navbar-end">
         <a class="navbar-item" href="#home">Home</a>
+        <a class="navbar-item" href="#introduction">Introduction</a>
         <a class="navbar-item" href="#methodology">Methodology</a>
         <a class="navbar-item" href="#experiments">Experiments</a>
         <a class="navbar-item" href="#references">References</a>
@@ -78,6 +116,7 @@
         <div class="column is-one-quarter is-hidden-mobile">
           <nav class="toc">
             <p><strong>Table of Contents</strong></p>
+            <br>
             <!-- TOC links will be inserted here -->
           </nav>
         </div>
@@ -121,34 +160,52 @@
     const tocLinks = []; // store link-heading pairs for scrollspy
 
     if (tocContainer && content) {
-      const headings = content.querySelectorAll('h1, h2, h3');
+      const headings = content.querySelectorAll('h2, h3, h4');
+      let h2Counter = 0;
+      let h3Counter = 0;
+      let h4Counter = 0;
+
       headings.forEach(h => {
         // Ensure each heading has an ID
         if (!h.id) {
           h.id = h.textContent.trim().toLowerCase().replace(/\s+/g, '-');
         }
 
+        let number = '';
+        if (h.tagName === 'H2') {
+          h2Counter++;
+          h3Counter = 0;
+          number = h2Counter + '. ';
+        } else if (h.tagName === 'H3') {
+          h3Counter++;
+          number = h2Counter + '.' + h3Counter + ' ';
+        } else if (h.tagName === 'H4') {
+          h4Counter++;
+          number = h2Counter + '.' + h3Counter + '.' + h4Counter + ' ';
+        }
+
         // Create TOC link
         const link = document.createElement('a');
         link.href = `#${h.id}`;
-        link.textContent = h.textContent;
+        link.textContent = number + h.textContent;
 
         // Indentation for subheadings
         if (h.tagName === 'H2') link.classList.add('toc-h2');
         if (h.tagName === 'H3') link.classList.add('toc-h3');
+        if (h.tagName === 'H4') link.classList.add('toc-h4');
 
         tocContainer.appendChild(link);
         tocLinks.push({link, heading: h});
       });
 
-      // Scrollspy: highlight heading currently at/near top of content
+      // Scrollspy (unchanged)
       window.addEventListener('scroll', () => {
-        const scrollPosition = window.scrollY + navbarHeight + 10; // offset
+        const scrollPosition = window.scrollY + navbarHeight + 50;
         let current = null;
 
         tocLinks.forEach(({link, heading}) => {
           if (heading.offsetTop <= scrollPosition) {
-            current = link; // last heading above scroll position
+            current = link;
           }
         });
 
@@ -156,9 +213,14 @@
         if (current) current.classList.add('is-active');
       });
 
-      // Trigger scrollspy on page load in case already scrolled
       window.dispatchEvent(new Event('scroll'));
     }
   </script>
+  <footer class="footer has-background-light" style="padding:2rem 1rem;">
+  <div class="content has-text-centered">
+    <p>&copy; 2025 Meta-Learning Project. All rights reserved.</p>
+    <p><a href="#home">Back to top</a></p>
+  </div>
+</footer>
 </body>
 </html>
