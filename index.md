@@ -27,7 +27,7 @@ Our approach:
 
 ### <a id="requirements"></a> Requirements
 
-The table below shows the minimum hardware and software requirements needed for reproducing the results of this research project. For training the model, we used an A100 NVIDIA GPU with PCIe and 40 GB of vRAM. This is the minimum vRAM needed to be able to train a meta-model without needing any modifications to the code provided in the Github repository. If you have a GPU with lower vRAM, you will need to lower the batch size during training to ensure the batched data can fit in GPU memory. 
+The table below shows the minimum hardware and software requirements needed for reproducing the results of this research project. For training the model, we used an A100 NVIDIA GPU with PCIe and 40 GB of vRAM. This is the minimum vRAM needed to be able to train a meta-model across all datasets without needing any modifications to the code provided in the Github repository. If you have a GPU with lower vRAM, you will need to lower the batch size during training to ensure the model and batched data can fit within the stipulated GPU memory. 
 
 | Item         | Minimum Required |
 |--------------------------------|
@@ -41,9 +41,9 @@ The table below shows the minimum hardware and software requirements needed for 
 
 ### <a id="datasets"></a>Datasets
 
-![Results Plot](figures/class_distribution_pie_chart.png){: style="max-width:40%; height:auto; display:block; margin:0; margin-right:1em;" }
+![Results Plot](figures/Data_Summary.png){: style="max-width:100%; height:auto; display:block; margin:0; margin-right:1em;" }
 
-To evaluate dataset similary, a histogram plot of 50 randomly sampled grayscale images per dataset was computed and plotted. The grayscale histogram plots below show the raw pixel count of each pixel bit from 1–254, excluding pure black (0) and pure white (255) bit values. 
+ Since the purpose of this study is to develop a meta-model that can specifically adapt to our novel EIT dataset in a few-shot learning scenario, it is essential to identify which datasets share the greatest similarity with the EIT data and would therefore be most likely to produce positive transfer effects during meta-model training. To evaluate dataset similarity, we employed multiple complementary approaches. First, histogram plots were generated from 50 randomly sampled grayscale images per dataset, capturing the distribution of pixel intensities from 1–254. excluding pure black and white values at 0 and 255. We then computed Wasserstein distances between the target EIT-Novel-Data histogram and all other dataset histograms to quantify distributional differences. We also generated t-SNE embeddings to visualize high-dimensional relationships between datasets. 
 
 <figure style="text-align:center;">
   <img src="figures/Dataset_Similarity/dataset_histograms.png" 
@@ -73,10 +73,11 @@ To evaluate dataset similary, a histogram plot of 50 randomly sampled grayscale 
 
 </figure>
 
-The grayscale histogram analysis in Figure 2 demonstrates that the EIT-Novel-Data exhibits a distinct, narrow peak centered around grayscale values of approximately 120 to 150, in contrast to the skewed or multi-modal distributions observed in the remaining datasets. For instance, CBIS-DDSM-Mammogram and MRI-Brain-Tumor display complex multi-peaked structures, while datasets such as Breast-Ultrasound and Advanced-MRI-Breast-Lesion are heavily skewed toward darker intensities. The Wasserstein distance comparison in Figure 3b provides a quantitative assessment of these differences, showing that EIT-Novel-Data grayscale distribution aligns most closely with CBIS-DDSM-Mammogram, followed by RSNA-Pneumonia and Chest X-ray, whereas it diverges strongly from Advanced-MRI-Breast-Lesion and MRI-Brain-Tumor. These findings suggest that, despite being derived from a distinct imaging modality, EIT-Novel-Data shares greater grayscale intensity similarity with mammography and X-ray datasets than with MRI or ultrasound datasets.
+The grayscale histogram analysis in Figure 2 demonstrates that the EIT-Novel-Data exhibits a distinct, narrow peak centered around grayscale values of approximately 120 to 150, in contrast to the skewed or multi-modal distributions observed in the remaining datasets. For instance, CBIS-DDSM-Mammogram and MRI-Brain-Tumor display complex multi-peaked structures, while datasets such as Breast-Ultrasound and Advanced-MRI-Breast-Lesion are heavily skewed toward darker intensities, and X-ray datasets contain a wide range of pixel intensities as shown by their broader spectrums. The Wasserstein distance comparison in Figure 3b provides a quantitative assessment of these differences, showing that EIT-Novel-Data grayscale distribution aligns most closely with CBIS-DDSM-Mammogram, followed by RSNA-Pneumonia and Chest X-ray, whereas it diverges strongly from Advanced-MRI-Breast-Lesion and MRI-Brain-Tumor. These findings suggest that, despite being derived from a distinct imaging modality, EIT-Novel-Data shares greater grayscale intensity similarity with mammography and X-ray datasets than with MRI or ultrasound datasets.
 
+The t-SNE visualization in Figure 3a reveals that each dataset forms a distinct cluster in the CNN embedding space, highlighting clear modality-specific differences. The EIT-Novel-Data cluster is positioned relatively close to most of the datasets,  suggesting that it shares feature-level similarity across multiple modalities. Hoever, it's more clearly separated from the Advanced-MRI-Breast-Lesion and chest X-ray datasets. This pattern partially aligns with the Wasserstein analysis since EIT is close to mammography in both views, but despite intensity-based similarity to X-ray, the embedding places EIT farther from the X-ray datasets, indicating that relying on grayscale similarity alone is insufficient when determining similarity in representational structures.
 
-The t-SNE visualization in Figure 3a reveals that each dataset forms a distinct cluster in the CNN embedding space, highlighting clear modality-specific differences. The EIT-Novel-Data cluster is positioned relatively close to most of the datasets,  suggesting that it shares feature-level similarity across multiple modalities. Hoever, it's more clearly separated from the Advanced-MRI-Breast-Lesion and chest X-ray datasets. This pattern partially aligns with the Wasserstein analysis since EIT is close to mammography in both views, but despite intensity-based similarity to X-ray, the embedding places EIT farther from the X-ray datasets, indicating that relying on grayscale similarity alone does not always translate to similarity in higher-level features.
+We hypothesize that training a meta-model using datasets that are proximally-close to the target dataset in the embedding space will yield the best model performance since meta-learning involves learning to learn from limited data, and proximally-related tasks share similar representational structures, thus providing more relevant prior knowledge for rapid adaptation to the target domain. 
 
 ### <a id="data_pipeline"></a>Data Processing Pipeline
 
@@ -97,16 +98,23 @@ The t-SNE visualization in Figure 3a reveals that each dataset forms a distinct 
 | MRI     | 72.3%    | **81.4%**     | +9.1 |
 | X-Ray   | 68.5%    | **77.2%**     | +8.7 |
 
-### Experiment 1
+### Experiment 1 - Optimal Meta-Learning Rate
 <div style="display:flex; flex-wrap:wrap; gap:1em;">
   <img src="figures/learning_rate/mAP50_curves_vs_epoch.png" alt="Learning Rate" style="max-width:49%; height:auto;"/>
   <img src="figures/learning_rate/mAP50_vs_learning_rate.png" alt="Learning Rate" style="max-width:49%; height:auto;"/>
 </div>
 
-### Experiment 2
-The purpose of this ablation study was to determine how the meta-model's performance changes as more tasks are adding during training.
+### Experiment 2 - Task Dependence
+The purpose of this experiment was to determine how the meta-model's performance changes as more tasks are adding during training.
 
-![Box Plot](figures/Bar_Chart/bar_chart_metrics_epoch_40.png){: style="max-width:100%; height:80%; display:block; margin:0 margin-right:1em;" }
+<figure style="text-align:center;">
+  <img src="figures/Bar_Chart/bar_chart_metrics_epoch_40.png" 
+       alt="Histogram"
+       style="max-width:60%; height:auto; display:block; margin:0 auto;" />
+  <figcaption style="margin-top:0.5em; font-style:italic;">
+    Figure X: Impact on meta-model performance (mAP50, precision, recall) as more tasks are added during meta-training.
+  </figcaption>
+</figure>
 
 <figure style="text-align:left;">
 
@@ -123,11 +131,20 @@ The purpose of this ablation study was to determine how the meta-model's perform
   </div>
 
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure 2: Box plots for performance metrics mean average precision at IOU 50%, recall, precision and F1 score for meta-models trained on N=2 tasks up to N=7 tasks.
+    Figure X: Box plots for various performance metrics including mean average precision at IOU 50%, recall, precision and F1 score for meta-models trained on N=2 to N=7 tasks.
   </figcaption>
 
 </figure>
 
+The results demonstrate how meta-model generalization performance varies with task diversity in a meta-learning framework. Figure X reveals that meta-model performance follows an inverted U-shaped curve when scaling from 2 to 7 tasks, with peak performance achieved at 4-5 tasks. The chart shows that mAP50 increases from 0.66 (2 tasks) to a maximum of 0.69 (5 tasks) before declining to 0.49 (7 tasks).
+
+This performance trajectory supports the hypothesis that meta-model generalization benefits from increased task diversity up to an optimal point. The initial improvement going from 2 to 5 tasks suggests that exposure to more diverse medical imaging tasks enhances the meta-learner's ability to quickly adapt to new detection problems by learning more generalizable feature representations and adaptation strategies.
+
+The boxplots in Figure X provide additional granularity in the model behavior, and illustrate how different task characteristics contribute to this meta-learning dynamic. The inclusion of diverse modalities (mammography, MRI, ultrasound, chest X-ray) exposes the meta-learner to varied visual patterns, tumor sizes and boundaries, grayscale intensities, and imaging artifacts. While MRI-Brain-Tumor maintains consistently high performance (~0.85-0.90 mAP50) due to its high quality annotations and detection ease, the challenging DeepSight-2d-Mammogram dataset with reduced image contrast provides valuable learning signal for the meta-model despite its individual poor performance of ~0.2-0.3 mAP50. 
+
+However, beyond 5 tasks, the meta-model's generalizability begins to deteriorate with the inclusion of out-of-distribution chest X-ray tasks. This is due to task interference introducing negative transfer effects that counter the benefits of diversity. The performance degradation is most pronounced in precision, suggesting that discriminative capabilities become compromised when the meta-learner attempts to accommodate too many disparate visual domains and detection requirements simultaneously.
+
+These findings indicate an optimal selection of tasks with sufficient heterogeneity to improve generalization without causing destructive interference to the meta-model's learned parameters.
 
 ### Experiment 3
 In experiment 2, we wanted to investigate the impact of....
