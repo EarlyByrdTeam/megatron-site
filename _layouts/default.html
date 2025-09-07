@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>{{ site.title }}</title>
-
+  <link rel="icon" type="image/png" href="/figures/icon/EarlyByrd2.png">
   <!-- Bulma CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
   <style>
@@ -35,9 +35,9 @@
     }
 
     /* Indent subheadings */
-    .toc .toc-h2 { margin-left: 0.5rem; }
-    .toc .toc-h3 { margin-left: 2.5rem; }
-    .toc .toc-h4 { margin-left: 4rem; }
+    .toc .toc-h2 { margin-left: 0.0rem; }
+    .toc .toc-h3 { margin-left: 1.0rem; }
+    .toc .toc-h4 { margin-left: 2.5rem; }
 
     /* Scrollspy active link */
     .toc a.is-active {
@@ -85,7 +85,7 @@
 </head>
 <body>
   <!-- Navbar -->
-  <nav class="navbar is-light is-fixed-top" role="navigation" aria-label="main navigation">
+  <nav class="navbar is-light is-fixed-top" role="navigation" aria-label="main navigation" style="height:60px;">
     <div class="navbar-brand">
       <!-- Hamburger menu for mobile -->
       <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMenu">
@@ -97,7 +97,9 @@
 
     <div id="navbarMenu" class="navbar-menu">
       <div class="navbar-end">
-        <a class="navbar-item" href="#home">Home</a>
+        <a class="navbar-item" href="#home" style="padding-left:1rem;">
+          <img src="/figures/icon/EarlyByrd2.png" alt="EarlyByrd Logo" style="height:60px; max-height:100%; width: 60px;">
+        </a>
         <a class="navbar-item" href="#introduction">Introduction</a>
         <a class="navbar-item" href="#methodology">Methodology</a>
         <a class="navbar-item" href="#experiments">Experiments</a>
@@ -107,7 +109,7 @@
     </div>
   </nav>
 
-  
+
 
   <!-- Main content with TOC sidebar -->
   <section class="section" style="padding-top: 3.25rem;">
@@ -136,15 +138,17 @@
 
     // Smooth scrolling with navbar offset
     document.addEventListener('click', function(e) {
-      if (e.target.tagName === 'A' && e.target.getAttribute('href')?.startsWith('#')) {
-        const target = document.querySelector(e.target.getAttribute('href'));
-        if (!target) return;
-        e.preventDefault();
-        window.scrollTo({
-          top: target.offsetTop - navbarHeight,
-          behavior: 'smooth'
-        });
-      }
+      const anchor = e.target.closest('a[href^="#"]');
+      if (!anchor) return;
+
+      const target = document.querySelector(anchor.getAttribute('href'));
+      if (!target) return;
+
+      e.preventDefault();
+      window.scrollTo({
+        top: target.offsetTop - navbarHeight,
+        behavior: 'smooth'
+      });
     });
 
     // Mobile navbar toggle
@@ -219,9 +223,10 @@
   </script>
   <footer class="footer has-background-light" style="padding:2rem 1rem;">
   <div class="content has-text-centered">
+    <p><img src="/figures/icon/EarlyByrd2.png" alt="EarlyByrd Logo" style="height:50px;"></p>
     <p>&copy; EarlyByrd Medical, 2025. All rights reserved.</p>
     <p><a href="#home">Back to top</a></p>
   </div>
-</footer>
+  </footer>
 </body>
 </html>

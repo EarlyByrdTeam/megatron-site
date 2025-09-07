@@ -55,13 +55,13 @@ Our approach:
 
 ### <a id="requirements"></a> Requirements
 
-The table below shows the minimum hardware and software requirements needed for reproducing the results of this research project. For training the model, we used an A100 NVIDIA GPU with PCIe and 40 GB of vRAM. This is the minimum vRAM needed to be able to train a meta-model across all datasets without needing any modifications to the code provided in the Github repository. If you have a GPU with lower vRAM, you will need to lower the batch size during training to ensure the model and batched data can fit within the stipulated GPU memory. 
+The table below shows the minimum hardware and software requirements needed for reproducing the results of this research project. For training the model, we used an A100 NVIDIA GPU with PCIe and 40 GB of vRAM. This is the minimum vRAM needed to be able to train a meta-model across all datasets without needing any modifications to the code provided in the Github repository. If your GPU has a lower vRAM, you will need to reduce the batch size during training to ensure the model, input data, gradients, optimizer states, and intermediate activations can all fit within the available GPU memory. 
 
 | Item         | Minimum Required |
 |--------------------------------|
 | GPU          | CUDA-enabled with compute capability > 3.0 |
 | CUDA Toolkit | 11.8             |
-| Storage      | 200 GB           |
+| Storage      | 1 TB             |
 | vRAM         | 40 GB            |
 | Linux Distro | Ubuntu 22.04     |
 | Conda        | 25.1.1           |
@@ -92,7 +92,7 @@ The table below shows the minimum hardware and software requirements needed for 
 
   <figure style="flex:1; text-align:center; margin:1;">
     <img src="figures/Dataset_Similarity/ws_distance.png" alt="Wasserstein distance" style="max-width:100%; height:auto;"/>
-    <figcaption>(b) Wasserstein distance between Novel EIT data and every dataset.</figcaption>
+    <figcaption>(b) Wasserstein distance between EIT data and every other dataset.</figcaption>
   </figure>
 </div>
   <figcaption style="margin-top:0.5em; font-style:italic;">
@@ -132,7 +132,7 @@ We hypothesize that training a meta-model using datasets that are proximally-clo
   <img src="figures/learning_rate/mAP50_vs_learning_rate.png" alt="Learning Rate" style="max-width:49%; height:auto;"/>
 </div>
 
-### Experiment 2 - Task Dependence
+### Experiment 2 - Generalizability and Task Dependence
 The purpose of this experiment was to determine how the meta-model's generalization performance varies with number and diversity of tasks. Figure X reveals that the meta-model performance follows an inverted U-shaped curve when scaling from 2 to 7 tasks, with peak performance achieved at 4-5 tasks. The chart shows that mAP50 increases from 0.66 when trained on 2 tasks to a maximum of 0.69 for 5 tasks before declining to 0.49 for 7 tasks.
 
 The model's performance trajectory supports the hypothesis that meta-model generalization benefits from increased task diversity up to an optimal point. The initial improvement going from 2 to 5 tasks suggests that exposure to more diverse medical imaging tasks enhances the meta-learner's ability to quickly adapt to new detection problems by learning more generalizable feature representations. Beyond 5 tasks, the meta-model's generalizability begins to deteriorate with the inclusion of out-of-distribution chest X-ray tasks. This is due to task interference introducing negative transfer effects that counter the benefits of diversity. The performance degradation is most pronounced in precision, suggesting that discriminative capabilities become compromised when the meta-learner attempts to accommodate too many disparate visual domains and detection requirements simultaneously.
@@ -143,7 +143,7 @@ The model's performance trajectory supports the hypothesis that meta-model gener
        alt="Histogram"
        style="max-width:60%; height:auto; display:block; margin:0 auto;" />
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure X: Impact on meta-model performance (mAP50, precision, recall) as more tasks are added during meta-training.
+    Figure X: Impact on meta-model performance (mAP50, precision, recall) as more tasks are added during meta-training. Each bar represents the average value over all 7 tasks.
   </figcaption>
 </figure>
 
@@ -231,9 +231,10 @@ These findings underscore meta-learning's fundamental strength in development of
 </figcaption>
 </figure>
     
-#### Comparison with Incremental Transfer Learning on Multiple Tasks
+### Experiment 5 - Comparison with Incremental Transfer Learning
 
-We performed standard transfer learning on three datasets in an incremental fashion to benchmark the performance of our meta-model against a conventionally fine-tuned model. We performed transfer learning in two ways, namely with and without freezing layers between tasks, and obtained two models whose performance on the validation set per dataset during the training schedule is shown below.
+We performed standard transfer learning on three tasks in an incremental manner to benchmark the performance of our meta-model against a conventionally fine-tuned model. By incremental transfer learning, we refer to the process in which the base model is fine-tuned on one task, saved, and subsequently used as the initialization for transfer learning on the next task. This procedure was carried out in two ways, namely with and without freezing model layers between tasks, resulting in two models. Their performance on each task’s validation set evaluated at intervals of 10 training epochs is shown below.
+
 <figure style="text-align:left;">
 
   <div style="gap:1em; text-align:center;">
@@ -243,12 +244,12 @@ We performed standard transfer learning on three datasets in an incremental fash
     </figure>
     <figure style="text-align:center; margin:0;">
         <img src="figures/Benchmark_CBIS_MRI_DS/benchmark_CBIS_MRI_DS_no_freeze.png" alt="benchmark_CBIS_MRI_DS_no_freeze0" style="width:100%; height:auto;"/>
-        <figcaption>(b) Incremental Transfer Learning with 10 frozen layers after task 1, and 15 frozen layers after task 2.</figcaption>
+        <figcaption>(b) Incremental Transfer Learning with 10 frozen layers during task 2 training, and 15 frozen layers during task 3 training.</figcaption>
     </figure>
   </div>
 
   <figcaption style="margin-top:0.5em; font-style:italic;">
-  Figure 7: Training two model on three tasks using incremental transfer learning where by (a) has no frozen layers between tasks and (b) uses 10 and 15 frozen layers after the addition of the second and third task, respectively.
+  Figure 7: Training two models on three tasks using incremental transfer learning where by (a) has no frozen layers between tasks and (b) uses 10 and 15 frozen layers after the addition of the second and third task, respectively.
   </figcaption>
 
 </figure>
@@ -257,11 +258,12 @@ A comparison between meta-learning and incremental transfer learning reveals sev
 
 The incremental transfer learning results reveal severe limitations inherent to this approach. The line plots demonstrate clear evidence of catastrophic forgetting, where previously learned tasks experience immediate and severe performance degradation to near-zero mAP50 when the model begins learning subsequent tasks. These results show that traditional fine-tuning approaches cannot maintain multi-task competency in medical imaging domains, and are especially unfit for use cases that require new datasets to be integrated in the training pipeline.
 
-In contrast, the meta-learning approach successfully avoids catastrophic forgetting entirely, maintaining functional performance across all seven tasks simultaneously as shown in Figure X. This multi-task retention capability is especially valuable for challenging datasets like DeepSight-2d-Mammogram, where meta-learning substantially outperforms the transfer learning approach, demonstrating superior knowledge integration. 
+In contrast, the meta-learning approach successfully avoids catastrophic forgetting entirely, maintaining functional performance across all seven tasks simultaneously as shown in Figure X. This multi-task retention ability is particularly valuable in scenarios where process changes and domain variability introduce new tasks that must be incorporated into the training and deployment pipeline, while still preserving high performance on previously learned tasks
 
 
 <p style="margin-top:3em;"></p>
-#### Few Shot Learning (N=40) on novel EIT data
+### Experiment 6 - Few Shot Learning on novel EIT data
+#### Few Shot Learning with N=30 samples
 
 <figure style="text-align:left;">
 
@@ -289,7 +291,7 @@ The Meta-Model trained on all five in-distribution tasks retains a better initia
 
 <p style="margin-top:3em;"></p>
 
-#### Very Few Shot Learning (N=20) on novel EIT data
+#### Very Few Shot Learning with N=15 samples
 
 <div style="display:flex; flex-wrap:wrap; gap:1em; justify-content:center; align-items:flex-start;">
 
