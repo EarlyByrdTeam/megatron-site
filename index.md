@@ -69,7 +69,7 @@ The table below shows the minimum hardware and software requirements needed for 
 
 ### <a id="datasets"></a>Datasets
 
-![Results Plot](figures/Data_Summary.png){: style="max-width:100%; height:auto; display:block; margin:0; margin-right:1em;" }
+![Results Plot](figures/Data/Data_Summary.png){: style="max-width:100%; height:auto; display:block; margin:0; margin-right:1em;" }
 
  Since the purpose of this study is to develop a meta-model that can specifically adapt to our novel EIT dataset in a few-shot learning scenario, it is essential to identify which datasets share the greatest similarity with the EIT data and would therefore be most likely to produce positive transfer effects during meta-model training. To evaluate dataset similarity, we employed multiple complementary approaches. First, histogram plots were generated from 50 randomly sampled grayscale images per dataset, capturing the distribution of pixel intensities from 1–254, excluding pure black and white values at 0 and 255. We then computed Wasserstein distances between the target EIT-Novel-Data histogram and all other dataset histograms to quantify distributional differences. We also generated t-SNE embeddings to visualize high-dimensional relationships between datasets. 
 
@@ -96,7 +96,7 @@ The table below shows the minimum hardware and software requirements needed for 
   </figure>
 </div>
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure 3: Comparing similarity between novel EIT data and all other datasets using two different similarity metrics: (a) 3D t-SNE plot and (b) Wasserstein distance between average histograms.
+    Figure 3: Comparing similarity between novel EIT data and all other datasets using two similarity metrics: (a) 3D t-SNE plot using 50 randomly sampled images per dataset and (b) Wasserstein distance between average histograms.
   </figcaption>
 
 </figure>
@@ -109,14 +109,57 @@ We hypothesize that training a meta-model using datasets that are proximally-clo
 
 ### <a id="data_pipeline"></a>Data Processing Pipeline
 
+<figure style="text-align:center;">
+  <img src="figures/Data/Pipeline.png" 
+       alt="Data Processing Pipeline"
+       style="max-width:100%; height:auto; display:block; margin:0 auto;" />
+  <figcaption style="margin-top:0.5em; font-style:italic;">
+    Figure X: Data processing pipeline utilized for standardizing datasets across different repositories, modalities, and image formats before feeding the data to a downstream meta-learning model.
+  </figcaption>
+</figure>
+
 ### <a id="meta_learn"></a>Meta Learning
 
-#### <a id="meta_learn"></a>Meta Training
+<div style="text-align: justify;  margin-bottom:2em">
+We adopt a meta-learning framework to enable rapid adaptation to novel tasks with limited labeled data. The goal is to learn a set of meta-parameters \(\theta\) that capture shared structure across tasks, facilitating few-shot learning on unseen tasks. In our setup, tasks are drawn from a distribution \(\mathcal{T}\), where each task \(T_i\) corresponds to a distinct dataset. To simulate a few-shot learning scenario, we employ an episodic training paradigm for each task in every meta-epoch. For each task, we sample a fixed number of examples from its training set to form the support set, which drives task-specific adaptation of the base model, and sample a fixed number of examples from the validation set to form the query set, on which the meta-model is evaluated. By using a fixed number of support and query examples per task, we ensure that each episode is standardized, which is particularly beneficial when tasks have varying numbers of samples. This standardization prevents tasks with larger datasets from dominating the meta-training process and allows the meta-model to learn representations that generalize across tasks of different sizes.
+</div>
 
-#### <a id="meta_learn"></a>Meta Validation
+#### <a id="meta_training"></a>Meta Training
 
-#### <a id="meta_learn"></a>Few-Shot Learning
+<div style="text-align: justify; margin-bottom:2em">
+During meta-training, the Reptile algorithm is used to optimize the meta-parameters \(\theta\) of the meta-model. For each meta-epoch, a task \(T_i\) is sampled from \(\mathcal{T}\), and task-specific parameters \(\theta_i\) are initialized from \(\theta\). The task-specific support set is fed to the model, and its parameters are updated via \(K\) steps of gradient descent using the task-specific loss \(\mathcal{L}_{T_i}\) with learning rate \(\alpha\), producing adapted parameters \(\theta_i^{(K)}\). The meta-parameters are then updated in the direction of the task-adapted parameters according to
+$$\theta\gets\theta+\beta(\theta_i^{(k)}−\theta),$$
+where \(\beta\) is the meta learning rate. This procedure is repeated across tasks and meta-epochs, gradually biasing \(\theta\) toward regions of the parameter space that enable rapid adaptation across the full distribution of tasks. Once training is complete, we'll have generated a meta-model capable of fast multi-task adaptation. 
+</div> 
 
+<figure style="text-align:center;">
+  <img src="figures/Algo/meta-train.png" 
+       alt="Algorithm"
+       style="max-width:80%; height:auto; display:block; margin:0 auto;" />
+  <figcaption style="margin-top:0.0em; font-style:italic;">
+    Figure X: Meta-Training Algorithm
+  </figcaption>
+</figure>
+
+#### <a id="meta_validation"></a>Meta Validation
+
+<div style="text-align: justify; margin-bottom:2em">
+To monitor generalization, we evaluate the meta-model on held-out task-specific query sets that were not used during meta-training. Prior to evaluation on a particular task, the meta-parameters are fine-tuned on the given task’s support set using 5 gradient descent steps. Skipping this step would mean the model is effectively being evaluated in a zero-shot setting for that task. Finally, the meta-model’s performance on the particular task is assessed by performing a prediction on its query set. This procedure provides a realistic estimate of few-shot adaptation performance by simulating the scenario where the model adapts to a new task with only limited support examples before being evaluated.
+</div>
+
+<figure style="text-align:center;">
+  <img src="figures/Algo/meta-val.png" 
+       alt="Algorithm"
+       style="max-width:80%; height:auto; display:block; margin:0 auto;" />
+  <figcaption style="margin-top:0.0em; font-style:italic;">
+    Figure X: Meta-Validation Algorithm
+  </figcaption>
+</figure>
+
+#### <a id="few_shot_learning"></a>Few-Shot Learning
+<div style="text-align: justify; margin-bottom:2em">
+After meta-training, the learned meta-parameters \(\theta\) can be quickly adapted to novel tasks with very few labeled examples. Given a new task \(T_{\text{new}}\), the meta-parameters are initialized to \(\theta\) and updated using a small number of gradient steps on the support set of \(T_{\text{new}}\). The adapted parameters are then used to make predictions on the task’s query set. This approach enables rapid generalization to unseen tasks with minimal supervision, leveraging the shared knowledge encoded in the meta-parameters.
+</div> 
 
 ---
 ## <a id="experiments"></a>Experiments & Findings
@@ -178,12 +221,12 @@ In experiment 2, we wanted to investigate the impact of....
 
 <div style="display:flex; flex-wrap:wrap; gap:1em; justify-content:center; align-items:flex-start;">
   <figure style="flex:1; text-align:center; margin:0;">
-    <img src="figures/Spider_Plots/number_of_FT_epochs/n7_ft5.png" alt="t-SNE of CNN embeddings" style="max-width:100%; height:auto;"/>
+    <img src="figures/Spider_Plots/number_of_FT_epochs/n7_ft5.png" alt="Meta-Model with 5 fine-tuning epochs" style="max-width:100%; height:auto;"/>
     <figcaption> (a) Meta-Model with 5 fine-tuning epochs.</figcaption>
   </figure>
 
   <figure style="flex:1; text-align:center; margin:0;">
-    <img src="figures/Spider_Plots/number_of_FT_epochs/n7_ft20.png" alt="Wasserstein distance" style="max-width:100%; height:auto;"/>
+    <img src="figures/Spider_Plots/number_of_FT_epochs/n7_ft20.png" alt="Meta-Model with 20 fine-tuning epochs" style="max-width:100%; height:auto;"/>
     <figcaption>(b) Meta-Model with 20 fine-tuning epochs.</figcaption>
   </figure>
 </div>
@@ -201,12 +244,12 @@ These findings underscore meta-learning's fundamental strength in development of
 
 <div style="display:flex; flex-wrap:wrap; gap:3em; justify-content:center; align-items:flex-start;">
   <figure style="flex:1; text-align:center;  margin:0;">
-    <img src="figures/Spider_Plots/small_vs_large_model/v8n_spider.png" alt="Benchmark EIT" style="max-width:100%; height:auto;"/>
+    <img src="figures/Spider_Plots/small_vs_large_model/v8n_spider.png" alt="v8n_spider" style="max-width:100%; height:auto;"/>
     <figcaption>(a) Small model</figcaption>
   </figure>
 
   <figure style="flex:1; text-align:center;  margin:0;">
-    <img src="figures/Spider_Plots/small_vs_large_model/v8n_warmup_spider.png" alt="Meta EIT" 
+    <img src="figures/Spider_Plots/small_vs_large_model/v8n_warmup_spider.png" alt="v8n_warmup_spider" 
     style="max-width:100%; height:auto;"/>
     <figcaption>(b)  Small model with 3 warmup epochs</figcaption>
   </figure>
@@ -214,12 +257,12 @@ These findings underscore meta-learning's fundamental strength in development of
 
 <div style="display:flex; flex-wrap:wrap; gap:3em; margin:2em; justify-content:center; align-items:flex-start;">
   <figure style="flex:1; text-align:center;  margin:0;">
-    <img src="figures/Spider_Plots/small_vs_large_model/v8s_spider.png" alt="Benchmark EIT" style="max-width:100%; height:auto;"/>
+    <img src="figures/Spider_Plots/small_vs_large_model/v8s_spider.png" alt="v8s_spider" style="max-width:100%; height:auto;"/>
     <figcaption>(a) Large Model </figcaption>
   </figure>
 
   <figure style="flex:1; text-align:center;  margin:0;">
-    <img src="figures/Spider_Plots/small_vs_large_model/v8s_warmup_spider.png" alt="Meta EIT" 
+    <img src="figures/Spider_Plots/small_vs_large_model/v8s_warmup_spider.png" alt="v8s_warmup_spider" 
     style="max-width:100%; height:auto;"/>
     <figcaption>(b) Large model with 3 warmup epochs</figcaption>
   </figure>
