@@ -55,14 +55,14 @@ Our approach:
 
 ### <a id="requirements"></a> Requirements
 <div style="text-align: justify;">
-The table below shows the minimum hardware and software requirements needed for reproducing the results of this research project. For training the model, we used an A100 NVIDIA GPU with PCIe and 40 GB of vRAM. This is the minimum vRAM needed to be able to train a meta-model across all datasets without needing any modifications to the code provided in the Github repository. If you have a GPU with lower vRAM, you will need to lower the batch size during training to ensure the model and batched data can fit within the stipulated GPU memory. 
+The table below shows the minimum hardware and software requirements needed for reproducing the results of this research project. For training the model, we used an A100 NVIDIA GPU with PCIe and 40 GB of vRAM. This is the minimum vRAM needed to be able to train a meta-model across all datasets without needing any modifications to the code provided in the Github repository. If your GPU has a lower vRAM, you will need to reduce the batch size during training to ensure the model, input data, gradients, optimizer states, and intermediate activations can all fit within the available GPU memory. 
 </div>
 
 | Item         | Minimum Required |
 |--------------------------------|
 | GPU          | CUDA-enabled with compute capability > 3.0 |
 | CUDA Toolkit | 11.8             |
-| Storage      | 200 GB           |
+| Storage      | 1 TB             |
 | vRAM         | 40 GB            |
 | Linux Distro | Ubuntu 22.04     |
 | Conda        | 25.1.1           |
@@ -70,7 +70,7 @@ The table below shows the minimum hardware and software requirements needed for 
 
 ### <a id="datasets"></a>Datasets
 
-![Results Plot](figures/Data_Summary.png){: style="max-width:100%; height:auto; display:block; margin:0; margin-right:1em;" }
+![Results Plot](figures/Data/Data_Summary.png){: style="max-width:100%; height:auto; display:block; margin:0; margin-right:1em;" }
 
 | Name | Pathology | Annotation Type | Classes | Image Format | No. of Samples | Source | DOI |
 |------------------|-----------------|----------|--------|------------|-------|------------|-------------------|
@@ -108,11 +108,11 @@ Since the purpose of this study is to develop a meta-model that can specifically
 
   <figure style="flex:1; text-align:center; margin:1;">
     <img src="figures/Dataset_Similarity/ws_distance.png" alt="Wasserstein distance" style="max-width:100%; height:auto;"/>
-    <figcaption>(b) Wasserstein distance between Novel EIT data and every dataset.</figcaption>
+    <figcaption>(b) Wasserstein distance between EIT data and every other dataset.</figcaption>
   </figure>
 </div>
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure 3: Comparing similarity between novel EIT data and all other datasets using two different similarity metrics: (a) 3D t-SNE plot and (b) Wasserstein distance between average histograms.
+    Figure 3: Comparing similarity between novel EIT data and all other datasets using two similarity metrics: (a) 3D t-SNE plot using 50 randomly sampled images per dataset and (b) Wasserstein distance between average histograms.
   </figcaption>
 
 </figure>
@@ -127,14 +127,57 @@ We hypothesize that training a meta-model using datasets that are proximally-clo
 
 ### <a id="data_pipeline"></a>Data Processing Pipeline
 
+<figure style="text-align:center;">
+  <img src="figures/Data/Pipeline.png" 
+       alt="Data Processing Pipeline"
+       style="max-width:100%; height:auto; display:block; margin:0 auto;" />
+  <figcaption style="margin-top:0.5em; font-style:italic;">
+    Figure X: Data processing pipeline utilized for standardizing datasets across different repositories, modalities, and image formats before feeding the data to a downstream meta-learning model.
+  </figcaption>
+</figure>
+
 ### <a id="meta_learn"></a>Meta Learning
 
-#### <a id="meta_learn"></a>Meta Training
+<div style="text-align: justify;  margin-bottom:2em">
+We adopt a meta-learning framework to enable rapid adaptation to novel tasks with limited labeled data. The goal is to learn a set of meta-parameters \(\theta\) that capture shared structure across tasks, facilitating few-shot learning on unseen tasks. In our setup, tasks are drawn from a distribution \(\mathcal{T}\), where each task \(T_i\) corresponds to a distinct dataset. To simulate a few-shot learning scenario, we employ an episodic training paradigm for each task in every meta-epoch. For each task, we sample a fixed number of examples from its training set to form the support set, which drives task-specific adaptation of the base model, and sample a fixed number of examples from the validation set to form the query set, on which the meta-model is evaluated. By using a fixed number of support and query examples per task, we ensure that each episode is standardized, which is particularly beneficial when tasks have varying numbers of samples. This standardization prevents tasks with larger datasets from dominating the meta-training process and allows the meta-model to learn representations that generalize across tasks of different sizes.
+</div>
 
-#### <a id="meta_learn"></a>Meta Validation
+#### <a id="meta_training"></a>Meta Training
 
-#### <a id="meta_learn"></a>Few-Shot Learning
+<div style="text-align: justify; margin-bottom:2em">
+During meta-training, the Reptile algorithm is used to optimize the meta-parameters \(\theta\) of the meta-model. For each meta-epoch, a task \(T_i\) is sampled from \(\mathcal{T}\), and task-specific parameters \(\theta_i\) are initialized from \(\theta\). The task-specific support set is fed to the model, and its parameters are updated via \(K\) steps of gradient descent using the task-specific loss \(\mathcal{L}_{T_i}\) with learning rate \(\alpha\), producing adapted parameters \(\theta_i^{(K)}\). The meta-parameters are then updated in the direction of the task-adapted parameters according to
+$$\theta\gets\theta+\beta(\theta_i^{(k)}−\theta),$$
+where \(\beta\) is the meta learning rate. This procedure is repeated across tasks and meta-epochs, gradually biasing \(\theta\) toward regions of the parameter space that enable rapid adaptation across the full distribution of tasks. Once training is complete, we'll have generated a meta-model capable of fast multi-task adaptation. 
+</div> 
 
+<figure style="text-align:center;">
+  <img src="figures/Algo/meta-train.png" 
+       alt="Algorithm"
+       style="max-width:80%; height:auto; display:block; margin:0 auto;" />
+  <figcaption style="margin-top:0.0em; font-style:italic;">
+    Figure X: Meta-Training Algorithm
+  </figcaption>
+</figure>
+
+#### <a id="meta_validation"></a>Meta Validation
+
+<div style="text-align: justify; margin-bottom:2em">
+To monitor generalization, we evaluate the meta-model on held-out task-specific query sets that were not used during meta-training. Prior to evaluation on a particular task, the meta-parameters are fine-tuned on the given task’s support set using 5 gradient descent steps. Skipping this step would mean the model is effectively being evaluated in a zero-shot setting for that task. Finally, the meta-model’s performance on the particular task is assessed by performing a prediction on its query set. This procedure provides a realistic estimate of few-shot adaptation performance by simulating the scenario where the model adapts to a new task with only limited support examples before being evaluated.
+</div>
+
+<figure style="text-align:center;">
+  <img src="figures/Algo/meta-val.png" 
+       alt="Algorithm"
+       style="max-width:80%; height:auto; display:block; margin:0 auto;" />
+  <figcaption style="margin-top:0.0em; font-style:italic;">
+    Figure X: Meta-Validation Algorithm
+  </figcaption>
+</figure>
+
+#### <a id="few_shot_learning"></a>Few-Shot Learning
+<div style="text-align: justify; margin-bottom:2em">
+After meta-training, the learned meta-parameters \(\theta\) can be quickly adapted to novel tasks with very few labeled examples. Given a new task \(T_{\text{new}}\), the meta-parameters are initialized to \(\theta\) and updated using a small number of gradient steps on the support set of \(T_{\text{new}}\). The adapted parameters are then used to make predictions on the task’s query set. This approach enables rapid generalization to unseen tasks with minimal supervision, leveraging the shared knowledge encoded in the meta-parameters.
+</div> 
 
 ---
 ## <a id="experiments"></a>Experiments & Findings
@@ -150,7 +193,7 @@ We hypothesize that training a meta-model using datasets that are proximally-clo
   <img src="figures/learning_rate/mAP50_vs_learning_rate.png" alt="Learning Rate" style="max-width:49%; height:auto;"/>
 </div>
 
-### Experiment 2 - Task Dependence
+### Experiment 2 - Generalizability and Task Dependence
 <div style="text-align: justify;">
 The purpose of this experiment was to determine how the meta-model's generalization performance varies with number and diversity of tasks. Figure X reveals that the meta-model performance follows an inverted U-shaped curve when scaling from 2 to 7 tasks, with peak performance achieved at 4-5 tasks. The chart shows that mAP50 increases from 0.66 when trained on 2 tasks to a maximum of 0.69 for 5 tasks before declining to 0.49 for 7 tasks.
 <br><br>
@@ -162,7 +205,7 @@ The model's performance trajectory supports the hypothesis that meta-model gener
        alt="Histogram"
        style="max-width:60%; height:auto; display:block; margin:0 auto;" />
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure X: Impact on meta-model performance (mAP50, precision, recall) as more tasks are added during meta-training.
+    Figure X: Impact on meta-model performance (mAP50, precision, recall) as more tasks are added during meta-training. Each bar represents the average value over all 7 tasks.
   </figcaption>
 </figure>
 
@@ -199,12 +242,12 @@ In experiment 2, we wanted to investigate the impact of....
 
 <div style="display:flex; flex-wrap:wrap; gap:1em; justify-content:center; align-items:flex-start;">
   <figure style="flex:1; text-align:center; margin:0;">
-    <img src="figures/Spider_Plots/number_of_FT_epochs/n7_ft5.png" alt="t-SNE of CNN embeddings" style="max-width:100%; height:auto;"/>
+    <img src="figures/Spider_Plots/number_of_FT_epochs/n7_ft5.png" alt="Meta-Model with 5 fine-tuning epochs" style="max-width:100%; height:auto;"/>
     <figcaption> (a) Meta-Model with 5 fine-tuning epochs.</figcaption>
   </figure>
 
   <figure style="flex:1; text-align:center; margin:0;">
-    <img src="figures/Spider_Plots/number_of_FT_epochs/n7_ft20.png" alt="Wasserstein distance" style="max-width:100%; height:auto;"/>
+    <img src="figures/Spider_Plots/number_of_FT_epochs/n7_ft20.png" alt="Meta-Model with 20 fine-tuning epochs" style="max-width:100%; height:auto;"/>
     <figcaption>(b) Meta-Model with 20 fine-tuning epochs.</figcaption>
   </figure>
 </div>
@@ -222,12 +265,12 @@ These findings underscore meta-learning's fundamental strength in development of
 
 <div style="display:flex; flex-wrap:wrap; gap:3em; justify-content:center; align-items:flex-start;">
   <figure style="flex:1; text-align:center;  margin:0;">
-    <img src="figures/Spider_Plots/small_vs_large_model/v8n_spider.png" alt="Benchmark EIT" style="max-width:100%; height:auto;"/>
+    <img src="figures/Spider_Plots/small_vs_large_model/v8n_spider.png" alt="v8n_spider" style="max-width:100%; height:auto;"/>
     <figcaption>(a) Small model</figcaption>
   </figure>
 
   <figure style="flex:1; text-align:center;  margin:0;">
-    <img src="figures/Spider_Plots/small_vs_large_model/v8n_warmup_spider.png" alt="Meta EIT" 
+    <img src="figures/Spider_Plots/small_vs_large_model/v8n_warmup_spider.png" alt="v8n_warmup_spider" 
     style="max-width:100%; height:auto;"/>
     <figcaption>(b)  Small model with 3 warmup epochs</figcaption>
   </figure>
@@ -235,12 +278,12 @@ These findings underscore meta-learning's fundamental strength in development of
 
 <div style="display:flex; flex-wrap:wrap; gap:3em; margin:2em; justify-content:center; align-items:flex-start;">
   <figure style="flex:1; text-align:center;  margin:0;">
-    <img src="figures/Spider_Plots/small_vs_large_model/v8s_spider.png" alt="Benchmark EIT" style="max-width:100%; height:auto;"/>
+    <img src="figures/Spider_Plots/small_vs_large_model/v8s_spider.png" alt="v8s_spider" style="max-width:100%; height:auto;"/>
     <figcaption>(a) Large Model </figcaption>
   </figure>
 
   <figure style="flex:1; text-align:center;  margin:0;">
-    <img src="figures/Spider_Plots/small_vs_large_model/v8s_warmup_spider.png" alt="Meta EIT" 
+    <img src="figures/Spider_Plots/small_vs_large_model/v8s_warmup_spider.png" alt="v8s_warmup_spider" 
     style="max-width:100%; height:auto;"/>
     <figcaption>(b) Large model with 3 warmup epochs</figcaption>
   </figure>
@@ -252,10 +295,11 @@ These findings underscore meta-learning's fundamental strength in development of
 </figcaption>
 </figure>
     
-#### Comparison with Incremental Transfer Learning on Multiple Tasks
+### Experiment 5 - Comparison with Incremental Transfer Learning
+
+We performed standard transfer learning on three tasks in an incremental manner to benchmark the performance of our meta-model against a conventionally fine-tuned model. By incremental transfer learning, we refer to the process in which the base model is fine-tuned on one task, saved, and subsequently used as the initialization for transfer learning on the next task. This procedure was carried out in two ways, namely with and without freezing model layers between tasks, resulting in two models. Their performance on each task’s validation set evaluated at intervals of 10 training epochs is shown below.
 
 <div style="text-align: justify;">
-We performed standard transfer learning on three datasets in an incremental fashion to benchmark the performance of our meta-model against a conventionally fine-tuned model. We performed transfer learning in two ways, namely with and without freezing layers between tasks, and obtained two models whose performance on the validation set per dataset during the training schedule is shown below.
 </div>
 
 <figure style="text-align:left;">
@@ -267,12 +311,12 @@ We performed standard transfer learning on three datasets in an incremental fash
     </figure>
     <figure style="text-align:center; margin:0;">
         <img src="figures/Benchmark_CBIS_MRI_DS/benchmark_CBIS_MRI_DS_no_freeze.png" alt="benchmark_CBIS_MRI_DS_no_freeze0" style="width:100%; height:auto;"/>
-        <figcaption>(b) Incremental Transfer Learning with 10 frozen layers after task 1, and 15 frozen layers after task 2.</figcaption>
+        <figcaption>(b) Incremental Transfer Learning with 10 frozen layers during task 2 training, and 15 frozen layers during task 3 training.</figcaption>
     </figure>
   </div>
 
   <figcaption style="margin-top:0.5em; font-style:italic;">
-  Figure 7: Training two model on three tasks using incremental transfer learning where by (a) has no frozen layers between tasks and (b) uses 10 and 15 frozen layers after the addition of the second and third task, respectively.
+  Figure 7: Training two models on three tasks using incremental transfer learning where by (a) has no frozen layers between tasks and (b) uses 10 and 15 frozen layers after the addition of the second and third task, respectively.
   </figcaption>
 
 </figure>
@@ -282,11 +326,12 @@ A comparison between meta-learning and incremental transfer learning reveals sev
 <br><br>
 The incremental transfer learning results reveal severe limitations inherent to this approach. The line plots demonstrate clear evidence of catastrophic forgetting, where previously learned tasks experience immediate and severe performance degradation to near-zero mAP50 when the model begins learning subsequent tasks. These results show that traditional fine-tuning approaches cannot maintain multi-task competency in medical imaging domains, and are especially unfit for use cases that require new datasets to be integrated in the training pipeline.
 <br><br>
-In contrast, the meta-learning approach successfully avoids catastrophic forgetting entirely, maintaining functional performance across all seven tasks simultaneously as shown in Figure X. This multi-task retention capability is especially valuable for challenging datasets like DeepSight-2d-Mammogram, where meta-learning substantially outperforms the transfer learning approach, demonstrating superior knowledge integration. 
+In contrast, the meta-learning approach successfully avoids catastrophic forgetting entirely, maintaining functional performance across all seven tasks simultaneously as shown in Figure X. This multi-task retention ability is particularly valuable in scenarios where process changes and domain variability introduce new tasks that must be incorporated into the training and deployment pipeline, while still preserving high performance on previously learned tasks
 </div>
 
 <p style="margin-top:3em;"></p>
-#### Few Shot Learning (N=40) on novel EIT data
+### Experiment 6 - Few Shot Learning on novel EIT data
+#### Few Shot Learning with N=30 samples
 
 <figure style="text-align:left;">
 
@@ -314,7 +359,7 @@ The Meta-Model trained on all five in-distribution tasks retains a better initia
 
 <p style="margin-top:3em;"></p>
 
-#### Very Few Shot Learning (N=20) on novel EIT data
+#### Very Few Shot Learning with N=15 samples
 
 <div style="display:flex; flex-wrap:wrap; gap:1em; justify-content:center; align-items:flex-start;">
 
