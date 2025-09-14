@@ -59,8 +59,10 @@ The table below shows the minimum hardware and software requirements needed for 
 <br><br>
 </div>
 
+<div markdown="1" style="max-width:70%; margin:5px 5px 20px 0;">
+
 | Item         | Minimum Required |
-|--------------------------------|
+|---------------------------------|
 | GPU          | CUDA-enabled with compute capability > 3.0 |
 | CUDA Toolkit | 11.8             |
 | Storage      | 1 TB             |
@@ -69,9 +71,15 @@ The table below shows the minimum hardware and software requirements needed for 
 | Conda        | 25.1.1           |
 | Python       | 3.10             |
 
+</div> 
+
 ### <a id="datasets"></a>Datasets
 
 ![Results Plot](figures/Data/Data_Summary.png){: style="max-width:100%; height:auto; display:block; margin:0; margin-right:1em;" }
+
+<p style="text-align:left; font-weight:400; margin:20px 0px 0.5rem 10px;">
+Table 1:  A summary of the 8 datasets used to train a general-purpose meta-model. 
+</p>
 
 | Name | Pathology | Annotation Type | Classes | Image Format | No. of Samples | Source | DOI |
 |------------------|-----------------|----------|--------|------------|-------|------------|-------------------|
@@ -137,10 +145,10 @@ We hypothesize that training a meta-model using datasets that are proximally-clo
   </figcaption>
 </figure>
 
-### <a id="meta_learn"></a>Meta Learning
+### <a id="meta_learn"></a>Meta Learning Algorithm
 
 <div style="text-align: justify;  margin-bottom:2em">
-We adopt a meta-learning framework to enable rapid adaptation to novel tasks with limited labeled data. The goal is to learn a set of meta-parameters \(\theta\) that capture shared structure across tasks, facilitating few-shot learning on unseen tasks. In our setup, tasks are drawn from a distribution \(\mathcal{T}\), where each task \(T_i\) corresponds to a distinct dataset. To simulate a few-shot learning scenario, we employ an episodic training paradigm for each task in every meta-epoch. For each task, we sample a fixed number of examples from its training set to form the support set, which drives task-specific adaptation of the base model, and sample a fixed number of examples from the validation set to form the query set, on which the meta-model is evaluated. By using a fixed number of support and query examples per task, we ensure that each episode is standardized, which is particularly beneficial when tasks have varying numbers of samples. This standardization prevents tasks with larger datasets from dominating the meta-training process and allows the meta-model to learn representations that generalize across tasks of different sizes.
+We adopt a meta-learning framework (Finn et al., 2017) to enable rapid adaptation to novel tasks with limited labeled data. The goal is to learn a set of meta-parameters \(\theta\) that capture shared structure across tasks, facilitating few-shot learning on unseen tasks. In our setup, tasks are drawn from a distribution \(\mathcal{T}\), where each task \(T_i\) corresponds to a distinct dataset. To simulate a few-shot learning scenario, we employ an episodic training paradigm for each task in every meta-epoch. For each task, we sample a fixed number of examples from its training set to form the support set, which drives task-specific adaptation of the base model, and sample a fixed number of examples from the validation set to form the query set, on which the meta-model is evaluated. By using a fixed number of support and query examples per task, we ensure that each episode is standardized, which is particularly beneficial when tasks have varying numbers of samples. This standardization prevents tasks with larger datasets from dominating the meta-training process and allows the meta-model to learn representations that generalize across tasks of different sizes.
 </div>
 
 #### <a id="meta_training"></a>Meta Training
@@ -181,6 +189,11 @@ After meta-training, the learned meta-parameters \(\theta\) can be quickly adapt
 <br><br>
 One can go a step further and incorporate the new task into the meta-model by including it as an additional task during meta-training. This can be achieved with ease because the meta-learning algorithm is designed to extend to new tasks without needing to retrain the model from scratch. Incorporating the new task nudges the meta-parameters toward an optimal minima that can quickly adapt to tasks that share similarities with the new task. This strengthens the model's long term adaptability as more tasks are introduced in the future, improves robustness by reducing the need for extensive fine-tuning, shortens deployment timelines, and ensures the model can continuously accommodate process or domain shifts without sacrificing performance on existing tasks.
 </div> 
+
+---
+### <a id="model_setup"></a>Meta-Model Setup
+
+The following model parameters were used for training and evaluation of the meta-learning model.
 
 ---
 ## <a id="experiments"></a>Experiments & Findings
@@ -334,7 +347,53 @@ In contrast, the meta-learning approach successfully avoids catastrophic forgett
 
 <p style="margin-top:3em;"></p>
 ### Experiment 6 - Few Shot Learning on novel EIT data
-#### Few Shot Learning with N=30 samples
+
+<div markdown="1" style="max-width:60%; margin:5px 5px 20px 0;">
+
+<p style="text-align:left; font-weight:400; margin:0 0 0.5rem 0;">
+Table 2:  Model performance comparison baseline transfer learning and meta-learning.
+</p>
+
+<style>
+/* Styles apply to the table inside this div */
+div[markdown="1"] > table {
+  width: 70%;
+  border-collapse: collapse;
+  text-align: left;
+}
+div[markdown="1"] > table th,
+div[markdown="1"] > table td {
+  padding: 10px 12px;
+  border-bottom: 10px solid #000000ff;
+  height: 50px;              /* approximate row height you can tweak */
+  vertical-align: left;
+}
+div[markdown="1"] > table th { font-weight:700; }
+
+/* Apply a thicker border to any row with the class 'thick-border' */
+div[markdown="1"] table tr.thick-border td {
+  border-bottom: 3px solid #000; /* thicker black line */
+}
+</style>
+
+| Dataset      | Baseline (%)| Meta-Model (%) | Δ (%)   |
+|--------------|:----------:|:---------------:|--------:|
+|              | <span style="color:#1f77b4; font-weight:600;">mAP50</span>      | <span style="color:#1f77b4; font-weight:600;">mAP50</span>         |       |
+| EIT (n=30)   | 62.9      | **87.5**     | +24.6 |
+| EIT (n=15)   | 41.3      | **71.7**     | +30.4 |
+|              | <span style="color:#1f77b4; font-weight:600;">Precision</span>  |  <span style="color:#1f77b4; font-weight:600;">Precision</span>    |       |
+| EIT (n=30)   | 64.6      | **86.1**  | +21.5    |
+| EIT (n=15)   | 46.0      | **81.8**  | +35.8    |
+|              | <span style="color:#1f77b4; font-weight:600;">Recall</span>     |  <span style="color:#1f77b4; font-weight:600;">Recall</span>    |       |
+| EIT (n=30)   | 61.4       |  **90.1**    | +28.7   |
+| EIT (n=15)   | 48.3       |  **69.7**    | +21.4   |
+|              | <span style="color:#1f77b4; font-weight:600;">F1-score</span>     |  <span style="color:#1f77b4; font-weight:600;">F1-score</span>    |       |
+| EIT (n=30)   | 62.3       |  **88.9**    | +26.6  |
+| EIT (n=15)   | 47.3       |  **75.8**     | +28.5  |
+
+</div> 
+
+#### Few Shot Learning with n=30 samples
 
 <figure style="text-align:left;">
 
@@ -347,11 +406,11 @@ In contrast, the meta-learning approach successfully avoids catastrophic forgett
   <figure style="flex:1; text-align:center;  margin:0;">
     <img src="figures/Benchmark_EIT/mAP50_vs_epoch_meta.png" alt="Meta EIT" 
     style="max-width:100%; height:auto;"/>
-    <figcaption>(b) Finetuning a Meta-Model</figcaption>
+    <figcaption>(b) Meta-Learning</figcaption>
   </figure>
 </div>
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure 8: Comparing model performance on the EIT validation set by (a) finetuning YOLO by transfer learning on EIT data for 300 epochs and (b) finetuning a meta-model (n=5) on EIT data for 50 meta-epochs, whereby each meta-epoch consists of 10 training epochs and 5 finetuning epochs on EIT data only. This means 20 meta-epochs is computationally equivalent to 300 epochs used during baseline transfer learning.
+    Figure 8: Comparing model performance on the EIT validation set by (a) finetuning YOLO by transfer learning on EIT data for 300 epochs and (b) finetuning a meta-model (trained on 5 tasks) on EIT data for 50 meta-epochs, whereby each meta-epoch consists of 10 training epochs and 5 finetuning epochs on EIT data only. This means 20 meta-epochs is computationally equivalent to 300 epochs used during baseline transfer learning.
 
   </figcaption>
 </figure>
@@ -362,18 +421,18 @@ The Meta-Model trained on all five in-distribution tasks retains a better initia
 
 <p style="margin-top:3em;"></p>
 
-#### Very Few Shot Learning with N=15 samples
+#### Very Few Shot Learning with n=15 samples
 
 <div style="display:flex; flex-wrap:wrap; gap:1em; justify-content:center; align-items:flex-start;">
 
   <figure style="flex:1; text-align:center; margin:0;">
     <img src="figures/Benchmark_EIT/EIT_small/FT50_Train50.png" alt="FT50 Train50" style="max-width:100%; height:auto;"/>
-    <figcaption>(a) Fine-tuning (50 epochs)</figcaption>
+    <figcaption>(a) 20 fine-tuning epochs</figcaption>
   </figure>
 
   <figure style="flex:1; text-align:center; margin:0;">
     <img src="figures/Benchmark_EIT/EIT_small/FT70_Train50.png" alt="FT70 Train50" style="max-width:100%; height:auto;"/>
-    <figcaption>(b) Fine-tuning (70 epochs)</figcaption>
+    <figcaption>(b) 40 fine-tuning epochs</figcaption>
   </figure>
 
 </div>
@@ -387,20 +446,9 @@ The Meta-Model trained on all five in-distribution tasks retains a better initia
 ---
 ## <a id="references"></a>References
 
-1. Finn, C., Abbeel, P., & Levine, S. (2017). Model-Agnostic Meta-Learning (MAML).  
-2. Hospedales, T. et al. (2022). Meta-Learning in Neural Networks: A Survey.  
-3. Dataset references: ChestX-ray14, BreastMRI, UltrasoundNerveSeg.  
-1. Finn, C., Abbeel, P., & Levine, S. (2017). Model-Agnostic Meta-Learning (MAML).  
-2. Hospedales, T. et al. (2022). Meta-Learning in Neural Networks: A Survey.  
-3. Dataset references: ChestX-ray14, BreastMRI, UltrasoundNerveSeg.
-1. Finn, C., Abbeel, P., & Levine, S. (2017). Model-Agnostic Meta-Learning (MAML).  
-2. Hospedales, T. et al. (2022). Meta-Learning in Neural Networks: A Survey.  
-3. Dataset references: ChestX-ray14, BreastMRI, UltrasoundNerveSeg.
-1. Finn, C., Abbeel, P., & Levine, S. (2017). Model-Agnostic Meta-Learning (MAML).  
-2. Hospedales, T. et al. (2022). Meta-Learning in Neural Networks: A Survey.  
-3. Dataset references: ChestX-ray14, BreastMRI, UltrasoundNerveSeg.
-1. Finn, C., Abbeel, P., & Levine, S. (2017). Model-Agnostic Meta-Learning (MAML).  
-2. Hospedales, T. et al. (2022). Meta-Learning in Neural Networks: A Survey.  
-3. Dataset references: ChestX-ray14, BreastMRI, UltrasoundNerveSeg.
+1. C. Finn, P. Abbeel, and S. Levine, "Model-agnostic meta-learning for fast adaptation of deep networks," in Proc. 34th Int. Conf. on Machine Learning (ICML'17), Sydney, NSW, Australia, 2017, pp. 1126–1135.
+2. A. Nichol, J. Achiam, and J. Schulman, "On First-Order Meta-Learning Algorithms," ArXiv, vol. abs/1803.02999, 2018.
+3. T. Hospedales, A. Antoniou, P. Micaelli, and A. Storkey, "Meta-Learning in Neural Networks: A Survey," IEEE Trans. Pattern Anal. Mach. Intell., vol. 44, no. 9, pp. 5149–5169, Sep. 2022, doi: 10.1109/TPAMI.2021.3079209.
+
 
 <p style="margin-top:7em;"></p>
