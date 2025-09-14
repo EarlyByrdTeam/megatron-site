@@ -136,14 +136,34 @@ We hypothesize that training a meta-model using datasets that are proximally-clo
 
 ### <a id="data_pipeline"></a>Data Processing Pipeline
 
+<div style="text-align: justify;">
+To enable systematic reuse of open-source biomedical imaging datasets (Table 1) for meta-model development, we designed and implemented a robust, extensible and automated data processing pipeline. The pipeline is built to ingest, clean, transform, and standardize heterogeneous datasets originating from various Global Repositories for Experimental Imaging (GREI), including Dataverse, Mendeley, Zenodo, and FigShare. The pipeline was designed with the dual objectives of ensuring reproducibility and reducing manual intervention, while maintaining flexibility to accommodate diverse imaging modalities, annotation conventions, and file formats to deliver harmonized outputs suitable for downstream meta-learning. 
+</div>
+
 <figure style="text-align:center;">
   <img src="figures/Data/Pipeline.png" 
        alt="Data Processing Pipeline"
-       style="max-width:100%; height:auto; display:block; margin:0 auto;" />
+       style="max-width:80%; height:auto; display:block; margin:0 auto;" />
   <figcaption style="margin-top:0.5em; font-style:italic;">
     Figure X: Data processing pipeline utilized for standardizing datasets across different repositories, modalities, and image formats before feeding the data to a downstream meta-learning model.
   </figcaption>
 </figure>
+
+<div style="text-align: justify;">
+The ingestion module of the pipeline retrieves datasets using persistent URLs from repositories including Dataverse, Mendeley, Zenodo, FigShare, TCIA, and RSNA. Data were downloaded through non-interactive scripted routines, which support both API-based queries and direct downloads, and subsequently decompressed from a variety of archive formats including .tar, .tgz, .7z, and .zip. The ingestion process preserves dataset provenance and versioning information to facilitate reproducibility across different computing environments. The system is capable of handling imaging data in multiple formats, including DICOM, JPG, PNG, HDF5, MAT, and NPZ, and ensures that each dataset is unpacked and stored in a consistent directory structure for downstream processing.
+
+<br><br>
+
+Following ingestion, datasets underwent a standardized cleaning and transformation workflow. All images were inspected for corruption by verifying that the headers and metadata were readable during decompression, and ensuring that each image could be successfully parsed by standard imaging libraries e.g., pydicom, PIL, OpenCV. Files that failed these checks were excluded, and datasets were further screened for outliers such as images with anomalous dimensions, empty pixel arrays, or intensity distributions inconsistent with the rest of the dataset. Any images that did not have corresponding annotation files, or vice versa, were discarded. Metadata associated with each dataset was normalized into a unified schema, allowing consistent representation of imaging modality, pathology, and annotation type, while removing unique identifiers to maintain patient anonymity. Preprocessing steps included contrast normalization, 8-bit grayscale conversion, and resizing of images to meet the requirements of downstream models. Since the datasets spanned both detection and segmentation tasks, i.e., images were accompanied with either bounding boxes or segmentation masks, annotation harmonization was performed to establish a consistent format to enable objection detection across multiple modalities. In particular, segmentation masks were converted into bounding box representations, and coordinate systems and bounding box annotations were standardized to ensure interoperability across datasets. Sanity checks using an image-label overlay routine were performed post-harmonization to ensure the transformed bounding box labels preserved their precise location relative to the anomalies in the image. For evaluation purposes, datasets lacking predefined splits were partitioned into training and validation sets using an 80/20 ratio.
+
+<br><br>
+
+The final stage of the pipeline focused on storage and retrieval. Processed datasets were stored in a standardized format, with each dataset being accompanied by a data.yaml file to inform the model of its train/val paths and class definitions. This faciliates loading and retrieving samples from each dataset using a unified dataloader suroutine. Each processed dataset can be reproduced deterministically from its original source data, as validation checks and error-handling mechanisms are incorporated at each stage of the workflow. Failed processes are logged and can be re-initiated without compromising the integrity of the processed output.
+
+<br><br>
+
+To support flexible workflows, the system includes an editable pipeline-config file that allows users to specify which datasets to ingest, process, and store, as well as which datasets to feed to the training pipeline, enabling either selective handling of individual datasets or processing of the entire portfolio. To optimize memory and compute, the pipeline automatically skips datasets that have already been processed, while providing users the option to force re-processing when needed. Through the above methods, the pipeline enables the scalable reuse of large, heterogeneous datasets in a manner that ensures consistency and reproducibility. The resulting standardized datasets serve as high-quality inputs for meta-learning models, providing a foundation for evaluating few-shot detection on novel imaging tasks.
+</div>
 
 ### <a id="meta_learn"></a>Meta Learning Algorithm
 
