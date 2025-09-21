@@ -63,7 +63,7 @@ The table below shows the minimum hardware and software requirements needed for 
 
 | Item         | Minimum Required |
 |---------------------------------|
-| GPU          | CUDA-enabled with compute capability > 3.0 |
+| GPU          | CUDA-enabled with compute capability >=3.0 |
 | CUDA Toolkit | 11.8             |
 | Storage      | 1 TB             |
 | vRAM         | 40 GB            |
@@ -78,7 +78,7 @@ The table below shows the minimum hardware and software requirements needed for 
 ![Results Plot](figures/Data/Data_Summary.png){: style="max-width:100%; height:auto; display:block; margin:0; margin-right:1em;" }
 
 <p style="text-align:left; font-weight:400; margin:20px 0px 0.5rem 10px;">
-Table 1:  A summary of the 8 datasets used to train a general-purpose meta-model. 
+Table 1:  A summary of the 8 datasets used to train a general-purpose meta-model. Datasets 1-7 are using during meta-model training, while dataset 8 is used to fine-tune the model and evaluate its few-shot object detection capabilities.
 </p>
 
 | Name | Pathology | Annotation Type | Classes | Image Format | No. of Samples | Source | DOI |
@@ -129,9 +129,9 @@ Since the purpose of this study is to develop a meta-model that can specifically
 <div style="text-align: justify;">
 The grayscale histogram analysis in Figure 2 demonstrates that the EIT-Novel-Data exhibits a distinct, narrow peak centered around grayscale values of approximately 120 to 150, in contrast to the skewed or multi-modal distributions observed in the remaining datasets. For instance, CBIS-DDSM-Mammogram and MRI-Brain-Tumor display complex multi-peaked structures, while datasets such as Breast-Ultrasound and Advanced-MRI-Breast-Lesion are heavily skewed toward darker intensities, and X-ray datasets contain a wide range of pixel intensities as shown by their broader spectrums. The Wasserstein distance comparison in Figure 3b provides a quantitative assessment of these differences, showing that EIT-Novel-Data grayscale distribution aligns most closely with CBIS-DDSM-Mammogram, followed by RSNA-Pneumonia and Chest X-ray, whereas it diverges strongly from Advanced-MRI-Breast-Lesion and MRI-Brain-Tumor. These findings suggest that, despite being derived from a distinct imaging modality, EIT-Novel-Data shares greater grayscale intensity similarity with mammography and X-ray datasets than with MRI or ultrasound datasets.
 <br><br>
-The t-SNE visualization in Figure 3a reveals that each dataset forms a distinct cluster in the CNN embedding space, highlighting clear modality-specific differences. The EIT-Novel-Data cluster is positioned relatively close to most of the datasets,  suggesting that it shares feature-level similarity across multiple modalities. Hoever, it's more clearly separated from the Advanced-MRI-Breast-Lesion and chest X-ray datasets. This pattern partially aligns with the Wasserstein analysis since EIT is close to mammography in both views, but despite intensity-based similarity to X-ray, the embedding places EIT farther from the X-ray datasets, indicating that relying on grayscale similarity alone is insufficient when determining similarity in representational structures.
+The t-SNE visualization in Figure 3a reveals that each dataset forms a distinct cluster in the CNN embedding space, highlighting clear modality-specific differences. The EIT-Novel-Data cluster is positioned relatively close to most of the datasets, suggesting that it shares feature-level similarity across multiple modalities. However, it's more clearly separated from the Advanced-MRI-Breast-Lesion and chest X-ray datasets. This pattern partially aligns with the Wasserstein analysis since EIT is close to mammography in both views, but despite intensity-based similarity to X-ray, the embedding places EIT farther from the X-ray datasets, indicating that relying on grayscale similarity alone is insufficient when determining similarity in representational structures.
 <br><br>
-We hypothesize that training a meta-model using datasets that are proximally-close to the target dataset in the embedding space will yield the best model performance since meta-learning involves learning to learn from limited data, and proximally-related tasks share similar representational structures, thus providing a better model initialization for rapid adaptation to the target domain. 
+We hypothesize that training a meta-model using datasets that are proximally-close to the target EIT dataset in the embedding space will yield the best model performance. This is because meta-learning involves learning to learn from limited data, and proximally-related tasks share similar representational structures, thus providing a better model initialization for rapid adaptation to the target domain. 
 </div>
 
 ### <a id="data_pipeline"></a>Data Processing Pipeline
@@ -145,7 +145,7 @@ To enable systematic reuse of open-source biomedical imaging datasets (Table 1) 
        alt="Data Processing Pipeline"
        style="max-width:80%; height:auto; display:block; margin:0 auto;" />
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure X: Data processing pipeline utilized for standardizing datasets across different repositories, modalities, and image formats before feeding the data to a downstream meta-learning model.
+    Figure 4: Data processing pipeline utilized for standardizing datasets across different repositories, modalities, and image formats before feeding the data to a downstream meta-learning model.
   </figcaption>
 </figure>
 
@@ -184,7 +184,7 @@ where \(\beta\) is the meta learning rate. This procedure is repeated across tas
        alt="Algorithm"
        style="max-width:80%; height:auto; display:block; margin:0 auto;" />
   <figcaption style="margin-top:0.0em; font-style:italic;">
-    Figure X: Meta-Training Algorithm
+    Figure 5: Meta-Training Algorithm
   </figcaption>
 </figure>
 
@@ -199,7 +199,7 @@ To monitor generalization, we evaluate the meta-model on held-out task-specific 
        alt="Algorithm"
        style="max-width:80%; height:auto; display:block; margin:0 auto;" />
   <figcaption style="margin-top:0.0em; font-style:italic;">
-    Figure X: Meta-Validation Algorithm
+    Figure 6: Meta-Validation Algorithm
   </figcaption>
 </figure>
 
@@ -215,23 +215,41 @@ One can go a step further and incorporate the new task into the meta-model by in
 
 The following model parameters were used for training and evaluation of the meta-learning model.
 
+<p style="text-align:left; font-weight:400; margin:20px 0px 0.5rem 10px;">
+Table 3: Meta-Model Parameters
+</p>
+<figure style="text-align:left; margin:0.2rem;">
+  <img src="figures/model_params.png" 
+       alt="Model Parameters"
+       style="max-width:80%; height:auto; display:block; margin:0 " />
+</figure>
+
 ---
 ## <a id="experiments"></a>Experiments & Findings
 
-| Dataset | Baseline | Meta-Learning | Δ |
-|---------|----------|---------------|---|
-| MRI     | 72.3%    | **81.4%**     | +9.1 |
-| X-Ray   | 68.5%    | **77.2%**     | +8.7 |
+We conducted ablation studies to identify optimal model hyperparameters, quantify how the number and combination of tasks spanning different modalities affect meta-learning generalizability, assess the impact of base learner architecture on accuracy, evaluate meta-model performance under extreme few-shot conditions, and determine the minimum fine-tuning required to maintain high accuracy.
+
 
 ### Experiment 1 - Optimal Meta-Learning Rate
-<div style="display:flex; flex-wrap:wrap; gap:1em;">
-  <img src="figures/learning_rate/mAP50_curves_vs_epoch.png" alt="Learning Rate" style="max-width:49%; height:auto;"/>
-  <img src="figures/learning_rate/mAP50_vs_learning_rate.png" alt="Learning Rate" style="max-width:49%; height:auto;"/>
+<figure style="text-align:left;">
+
+  <div style="display:flex; flex-wrap:wrap; gap:1em;">
+    <img src="figures/learning_rate/mAP50_curves_vs_epoch.png" alt="Learning Rate" style="max-width:49%; height:auto;"/>
+    <img src="figures/learning_rate/mAP50_vs_learning_rate.png" alt="Learning Rate" style="max-width:49%; height:auto;"/>
+  </div>
+
+  <figcaption style="margin-top:0.5em; font-style:italic;">
+    Figure 7: Comparing meta-model performance for meta-learning rates ranging from 0.01 to 0.8. (a) Evolution of mAP50 values during training for different learning rates. (b) A rolling average (window size=5) of mAP50 for different learning rates at epoch 40. The error bars indicate the standard deviation in mAP50 across the last 5 epochs used to compute the rolling average.
+  </figcaption>
+</figure>
+
+<div style="text-align: justify; margin-bottom:2em">
+Our analysis revealed that the optimal meta-learning rate,\(\beta\), was 0.05, as this value produced the highest mAP50 when averaged over the last five meta-epochs at epoch 40. While larger meta-learning rates also produced a relatively high mAP, we opted for selecting the smallest possible rate to allow for stable model convergence. A small \(\beta\) reduces the risk of overreacting to noisy meta-gradients, especially for task-wise reptile updates.
 </div>
 
 ### Experiment 2 - Generalizability and Task Dependence
 <div style="text-align: justify;">
-The purpose of this experiment was to determine how the meta-model's generalization performance varies with number and diversity of tasks. Figure X reveals that the meta-model performance follows an inverted U-shaped curve when scaling from 2 to 7 tasks, with peak performance achieved at 4-5 tasks. The chart shows that mAP50 increases from 0.66 when trained on 2 tasks to a maximum of 0.69 for 5 tasks before declining to 0.49 for 7 tasks.
+The purpose of this experiment was to determine how the meta-model's generalization performance varies with number and diversity of tasks. Figure 8 reveals that the meta-model performance follows an inverted U-shaped curve when scaling from 2 to 7 tasks, with peak performance achieved at 5 tasks. The chart shows that mAP50 increases from 0.66 when trained on 2 tasks to a maximum of 0.69 for 5 tasks before declining to 0.49 for 7 tasks.
 <br><br>
 The model's performance trajectory supports the hypothesis that meta-model generalization benefits from increased task diversity up to an optimal point. The initial improvement going from 2 to 5 tasks suggests that exposure to more diverse medical imaging tasks enhances the meta-learner's ability to quickly adapt to new detection problems by learning more generalizable feature representations. Beyond 5 tasks, the meta-model's generalizability begins to deteriorate with the inclusion of out-of-distribution chest X-ray tasks. This is due to task interference introducing negative transfer effects that counter the benefits of diversity. The performance degradation is most pronounced in precision, suggesting that discriminative capabilities become compromised when the meta-learner attempts to accommodate too many disparate visual domains and detection requirements simultaneously.
 </div>
@@ -241,7 +259,7 @@ The model's performance trajectory supports the hypothesis that meta-model gener
        alt="Histogram"
        style="max-width:60%; height:auto; display:block; margin:0 auto;" />
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure X: Impact on meta-model performance (mAP50, precision, recall) as more tasks are added during meta-training. Each bar represents the average value over all 7 tasks.
+    Figure 8: Impact on meta-model performance (mAP50, precision, recall) as more tasks are added during meta-training. Each bar represents the average value over all 7 tasks.
   </figcaption>
 </figure>
 
@@ -260,19 +278,19 @@ The model's performance trajectory supports the hypothesis that meta-model gener
   </div>
 
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure X: Box plots for various performance metrics including mean average precision at IOU 50%, recall, precision and F1 score for meta-models trained on N=2 to N=7 tasks.
+    Figure 9: Box plots for various performance metrics including mean average precision at IOU 50%, recall, precision and F1 score for meta-models trained on N=2 to N=7 tasks.
   </figcaption>
 
 </figure>
 
 <div style="text-align: justify;">
-The boxplots in Figure X provide additional granularity in the model behavior, and illustrate how different task characteristics contribute to this meta-learning dynamic. The inclusion of diverse modalities like mammography, MRI, ultrasound, and chest X-ray exposes the meta-learner to varied visual patterns, tumor sizes and boundaries, grayscale intensities, and imaging artifacts. It is interesting to see how the model behaves on tasks with varying levels of difficulty. For instance, the model maintains consistently high performance on MRI-Brain-Tumor (~0.85-0.90 mAP50) due to its high quality annotations and sharp tumor contrast. But, the model exhibits poor performance on the challenging DeepSight-2d-Mammogram dataset (~0.2-0.3 mAP50) due to its low image contrast. However, the overall model performance is still relatively high which means this challenging dataset still provides a valuable learning signal for the meta-model. Further, the performance on the Advanced-MRI-Breast-Lesion dataset is adversely affected when trained alongside RSNA-Pneumonia, with the value dropping from 0.7 to 0.25, and later recovering to 0.55 when Chest X-ray is added to the training schedule. This drop is probably because the Advanced-MRI-Breast-Lesion dataset is a small dataset that contributes a weak learning signal to the model, while the rise is probably because the Chest X-ray data may introduce regularization effects that help stabilize training.
+The boxplots in Figure 9 provide additional granularity in the model behavior, and illustrate how different task characteristics contribute to this meta-learning dynamic. The inclusion of diverse modalities like mammography, MRI, ultrasound, and chest X-ray exposes the meta-learner to varied visual patterns, tumor sizes and boundaries, grayscale intensities, and imaging artifacts. It is interesting to see how the model behaves on tasks with varying levels of difficulty. For instance, the model maintains consistently high performance on MRI-Brain-Tumor (~0.85-0.90 mAP50) due to its high quality annotations and sharp tumor contrast. But, the model exhibits poor performance on the challenging DeepSight-2d-Mammogram dataset (~0.2-0.3 mAP50) due to its low image contrast. However, the overall model performance is still relatively high which means this challenging dataset still provides a valuable learning signal for the meta-model. Further, the performance on the Advanced-MRI-Breast-Lesion dataset is adversely affected when trained alongside RSNA-Pneumonia, with the value dropping from 0.7 to 0.25, and later recovering to 0.55 when Chest X-ray is added to the training schedule. This drop is probably because the Advanced-MRI-Breast-Lesion dataset is a small dataset that contributes a weak learning signal to the model, while the rise is probably because the Chest X-ray data may introduce regularization effects that help stabilize training.
 <br><br>
 These findings indicate an optimal selection of tasks with sufficient heterogeneity to improve generalization without causing destructive interference to the meta-model's learned parameters.
 </div>
 
 ### Experiment 3 - Multi-task Meta-Learning Performance
-In experiment 2, we wanted to investigate the impact of....
+In experiment 3, we investigate the impact of fine-tuning schedules on meta-model performance. As expected, the model shows improved performance by 4-27% across tasks when the no. of fine-tuning steps is increased from 5 to 20.
 
 <figure style="text-align:left;">
 
@@ -288,14 +306,15 @@ In experiment 2, we wanted to investigate the impact of....
   </figure>
 </div>
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure X: Multi-Task Meta-Model performance across all 7 tasks with (a) 5 fine-tuning epochs and (b) 20 fine-tuning epochs during the meta-validation step.
+    Figure 10: Multi-Task Meta-Model performance across all 7 tasks with (a) 5 fine-tuning epochs and (b) 20 fine-tuning epochs during the meta-validation step.
   </figcaption>
 
 </figure>
 
 ### Experiment 4 - Model Size and Warmup Schedule
-In experiment 2, we wanted to investigate the impact of....
-These findings underscore meta-learning's fundamental strength in development of novel imaging applications or in resource-constrained settings. In settings where collecting vast amounts of data is impractical, one can leverage highly efficient meta-models which preserve knowledge across diverse diagnostic tasks to close the gap.
+<div style="text-align: justify; margin-bottom:2em">
+In experiment 4, we investigate the impact of base learner architecture size and learning rate warmup schedule on meta-model performance. The spider plots indicate unintuitive results, whereby the larger v8s model has poorer performance than the small v8n model for all tasks except Breast-Ultrasound, though its performance is significantly improved with warmup epochs. The larger model may initially perform worse because its high capacity can cause it to overfit small, heterogeneous datasets, learning task-specific noise rather than generalizable patterns. It benefits from warmup to stabilize its deeper architecture before meta-updates can be effective.  However, the small model's performance when a warmup schedule is utilized is slightly degraded for some tasks such as MRI-Brain-Tumor, DeepSight-2d-Mammogram, Advanced-MRI-Breast-Lesion, and Chest-xray. This can be explained by the fact that since YOLOv8n has a lower capacity, it tends to learn general features rather than task-specific noise, so warmup may result in overfitting to training data.
+</div>
 
 <figure style="text-align:left;">
 
@@ -326,14 +345,15 @@ These findings underscore meta-learning's fundamental strength in development of
 </div>
 
 <figcaption style="margin-top:0.5em; font-style:italic;">
-  Figure X: Spider plots showing how different base learner sizes and warmup schedules affects the multi-task performance of the meta-model trained on all 7 tasks. The plots show the mAP50 values evaluated on the validation set for each task.
+  Figure 11: Spider plots showing how different base learner sizes and warmup schedules affects the multi-task performance of the meta-model trained on all 7 tasks. The plots show the mAP50 values evaluated on the validation set for each task.
 
 </figcaption>
 </figure>
     
 ### Experiment 5 - Comparison with Incremental Transfer Learning
-
+<div style="text-align: justify; margin-bottom:2em">
 We performed standard transfer learning on three tasks in an incremental manner to benchmark the performance of our meta-model against a conventionally fine-tuned model. By incremental transfer learning, we refer to the process in which the base model is fine-tuned on one task, saved, and subsequently used as the initialization for transfer learning on the next task. This procedure was carried out in two ways, namely with and without freezing model layers between tasks, resulting in two models. Their performance on each task’s validation set evaluated at intervals of 10 training epochs is shown below.
+</div>
 
 <div style="text-align: justify;">
 </div>
@@ -352,13 +372,13 @@ We performed standard transfer learning on three tasks in an incremental manner 
   </div>
 
   <figcaption style="margin-top:0.5em; font-style:italic;">
-  Figure 7: Training two models on three tasks using incremental transfer learning where by (a) has no frozen layers between tasks and (b) uses 10 and 15 frozen layers after the addition of the second and third task, respectively.
+  Figure 12: Training two models on three tasks using incremental transfer learning where by (a) has no frozen layers between tasks and (b) uses 10 and 15 frozen layers after the addition of the second and third task, respectively.
   </figcaption>
 
 </figure>
 
 <div style="text-align: justify;">
-A comparison between meta-learning and incremental transfer learning reveals several critical insights about multi-task medical imaging performance. Both approaches demonstrate consistent relative dataset difficulty rankings, with MRI-Brain-Tumor achieving the highest performance of 0.94 with meta-learning and 0.9 with transfer learning, and DeepSight-2d-Mammogram showing the poorest results of 0.54 with meta-learning and 0.3 with transfer learning. Notably, CBIS-DDSM-Mammogram exhibits remarkably similar performance between approaches (~0.76 vs ~0.75), suggesting this dataset represents an optimal difficulty level for both learning paradigms.
+A comparison between meta-learning (Figure 10) and incremental transfer learning (Figure 12) reveals several critical insights about multi-task medical imaging performance. Both approaches demonstrate consistent relative dataset difficulty rankings, with MRI-Brain-Tumor achieving the highest performance of 0.94 with meta-learning and 0.90 with transfer learning, and DeepSight-2d-Mammogram showing remarkably similar performance of about 0.3 between approaches.
 <br><br>
 The incremental transfer learning results reveal severe limitations inherent to this approach. The line plots demonstrate clear evidence of catastrophic forgetting, where previously learned tasks experience immediate and severe performance degradation to near-zero mAP50 when the model begins learning subsequent tasks. These results show that traditional fine-tuning approaches cannot maintain multi-task competency in medical imaging domains, and are especially unfit for use cases that require new datasets to be integrated in the training pipeline.
 <br><br>
@@ -367,11 +387,14 @@ In contrast, the meta-learning approach successfully avoids catastrophic forgett
 
 <p style="margin-top:3em;"></p>
 ### Experiment 6 - Few Shot Learning on novel EIT data
+<div style="text-align: justify; margin-bottom:2em">
+This experiment evaluates the meta-model's performance under extreme few-shot learning scenarios on our sparse EIT dataset with a total of 40 samples. The dataset is split into train-val sets, whereby the training set contains 30 samples and the val set contains 10 samples. The model is then trained on the entire training set, and later on only 50% of the training set to simulate very few-shot learning. The results in Table 4 show that the meta-model consistently outperforms the baseline model across all four evaluation metrics. The meta-model demonstrates a larger delta for the very few-shot learning task, indicating that baseline transfer learning falls significantly short in such scenarios.
+</div>
 
 <div markdown="1" style="max-width:60%; margin:5px 5px 20px 0;">
 
 <p style="text-align:left; font-weight:400; margin:0 0 0.5rem 0;">
-Table 2:  Model performance comparison baseline transfer learning and meta-learning.
+Table 4:  Model performance comparison baseline transfer learning and meta-learning.
 </p>
 
 <style>
@@ -415,6 +438,11 @@ div[markdown="1"] table tr.thick-border td {
 
 #### Few Shot Learning with n=30 samples
 
+<div style="text-align: justify; margin-bottom:2em">
+The meta-model obtained after training on 5 conventional tasks is further fine-tuned using a small EIT dataset consisting of 30 samples. 
+The results in the mAP50 vs. epoch charts in Figure 13 show that, for a computationally equivalent number of training epochs, the meta-model achieves a higher mAP50 as compared to the baseline model.
+</div>
+
 <figure style="text-align:left;">
 
 <div style="display:flex; flex-wrap:wrap; gap:1em; justify-content:center; align-items:flex-start;">
@@ -430,19 +458,22 @@ div[markdown="1"] table tr.thick-border td {
   </figure>
 </div>
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure 8: Comparing model performance on the EIT validation set by (a) finetuning YOLO by transfer learning on EIT data for 300 epochs and (b) finetuning a meta-model (trained on 5 tasks) on EIT data for 50 meta-epochs, whereby each meta-epoch consists of 10 training epochs and 5 finetuning epochs on EIT data only. This means 20 meta-epochs is computationally equivalent to 300 epochs used during baseline transfer learning.
+    Figure 13: Comparing model performance on the EIT validation set by (a) finetuning YOLO by transfer learning on EIT data for 300 epochs and (b) finetuning a meta-model (trained on 5 tasks) on EIT data for 50 meta-epochs, whereby each meta-epoch consists of 10 training epochs and 5 finetuning epochs on EIT data only. This means 20 meta-epochs is computationally equivalent to 300 epochs used during baseline transfer learning.
 
   </figcaption>
 </figure>
 
 <p style="margin-top:1em;"></p>
-
-The Meta-Model trained on all five in-distribution tasks retains a better initialization for the task of fine-tuning on the novel EIT dataset, as indicated by the higher mAP50 after the first meta-epoch in Figure (a). In contrast,
+<div style="text-align: justify; margin-bottom:2em">
+The meta-model trained on five in-distribution tasks retains a better initialization for the task of fine-tuning on the novel EIT dataset, as indicated by the higher mAP50 of 57.9% after the first meta-epoch in Figure 13(b). It achieves a maximum mAP50 of 87.5% after 18 meta-epochs, but as the meta-model is trained further we observe the mAP50 drop below 80% after epoch 35, indicating the model is overfitting to the training data. However, the meta-model still achieves superior performance within a computationally equivalent number of epochs to the baseline model, since the baseline is only able to reach a maximum mAP50 of 62.9% at epoch 150, as shown in Figure 13(a).
+</div>
 
 <p style="margin-top:3em;"></p>
 
 #### Very Few Shot Learning with n=15 samples
+The meta-model obtained after training on 5 conventional tasks is finally fine-tuned on a very small EIT dataset consisting of 15 samples. 
 
+<figure style="text-align:left;">
 <div style="display:flex; flex-wrap:wrap; gap:1em; justify-content:center; align-items:flex-start;">
 
   <figure style="flex:1; text-align:center; margin:0;">
@@ -454,14 +485,19 @@ The Meta-Model trained on all five in-distribution tasks retains a better initia
     <img src="figures/Benchmark_EIT/EIT_small/FT70_Train50.png" alt="FT70 Train50" style="max-width:100%; height:auto;"/>
     <figcaption>(b) 40 fine-tuning epochs</figcaption>
   </figure>
+</div>
+  <figcaption style="margin-top:0.5em; font-style:italic;">
+    Figure 14: A comparison of meta-model performance when trained with 10 epochs but fine-tuned with (a) 20 epochs and (b) 40 epochs on a very small dataset with n=15 training samples.
+  </figcaption>
+</figure>
 
+<div style="text-align: left">
+The results in Figure 14 indicate that a smaller number of fine-tuning epochs leads to highly unstable performance, with mAP50 values fluctuating between 1.3% and 94% over the training schedule (Figure 14a). In contrast, extending fine-tuning to 40 epochs reduces overfitting and stabilizes performance, yielding mAP50 values of at least 80-90% across meta-epochs (Figure 14b).
 </div>
 
 ## <a id="conclusion"></a>Conclusion
+In conclusion, this research demonstrates that meta-learning, supported by a robust, extensible data processing pipeline, can effectively address the challenges of scarce training data in emerging medical imaging modalities such as EIT. Our framework enables very few-shot detection, leverages conventional imaging datasets to accelerate model development, and maintains robust performance across tasks without catastrophic forgetting. Systematic ablation studies highlight the importance of hyperparameter tuning, task selection and diversity, base learner network size and warmup schedules, and fine-tuning schedules for optimizing generalization. By combining open-source libraries for deterministic data handling, and modular workflows, our approach provides a transparent, reproducible and extendable framework for future diagnostic applications. Collectively, these findings establish a generalizable blueprint for accelerating the clinical translation of novel imaging technologies and improving patient outcomes by leveraging meta-models that preserve knowledge across diverse diagnostic tasks, especially when collecting large datasets is impractical.
 
-
-
-<p style="margin-top:10em;"></p>
 
 ---
 ## <a id="references"></a>References
