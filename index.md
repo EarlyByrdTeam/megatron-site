@@ -13,6 +13,11 @@ title: "MEGATRON: Meta-learning for Next-Gen Advanced Technology Realization & A
 
 <br><br>
 <strong>Keywords:</strong> Meta-learning, Data Reuse, Few-shot Learning, Electrical Impedance Tomography, Breast Cancer Detection
+<div style="text-align: center; margin-top: 30px;">
+  <a href="https://github.com/bindi-nagda/megatron" target="_blank" style="display:inline-block;">
+    <img src="https://img.shields.io/badge/View%20on-GitHub-blue?style=for-the-badge&logo=github&logoColor=white" alt="View on GitHub">
+  </a>
+</div>
 </div>
 
 ---
@@ -59,6 +64,9 @@ The table below shows the minimum hardware and software requirements needed for 
 <br><br>
 </div>
 
+<p style="text-align:left; font-weight:400; margin:5px 0px 0.5rem 10px;">
+Table 1:  Hardware and software minimum requirements.
+</p>
 <div markdown="1" style="max-width:70%; margin:5px 5px 20px 0;">
 
 | Item         | Minimum Required |
@@ -75,10 +83,12 @@ The table below shows the minimum hardware and software requirements needed for 
 
 ### <a id="datasets"></a>Datasets
 
+TODO: Add dataset description.
+
 ![Results Plot](figures/Data/Data_Summary.png){: style="max-width:100%; height:auto; display:block; margin:0; margin-right:1em;" }
 
 <p style="text-align:left; font-weight:400; margin:20px 0px 0.5rem 10px;">
-Table 1:  A summary of the 8 datasets used to train a general-purpose meta-model. Datasets 1-7 are using during meta-model training, while dataset 8 is used to fine-tune the model and evaluate its few-shot object detection capabilities.
+Table 2:  A summary of the 8 datasets used to train a general-purpose meta-model. Datasets 1-7 are using during meta-model training, while dataset 8 is used to fine-tune the model and evaluate its few-shot object detection capabilities.
 </p>
 
 | Name | Pathology | Annotation Type | Classes | Image Format | No. of Samples | Source | DOI |
@@ -137,7 +147,7 @@ We hypothesize that training a meta-model using datasets that are proximally-clo
 ### <a id="data_pipeline"></a>Data Processing Pipeline
 
 <div style="text-align: justify;">
-To enable systematic reuse of open-source biomedical imaging datasets (Table 1) for meta-model development, we designed and implemented a robust, extensible and automated data processing pipeline. The pipeline is built to ingest, clean, transform, and standardize heterogeneous datasets originating from various Global Repositories for Experimental Imaging (GREI), including Dataverse, Mendeley, Zenodo, and FigShare. The pipeline was designed with the dual objectives of ensuring reproducibility and reducing manual intervention, while maintaining flexibility to accommodate diverse imaging modalities, annotation conventions, and file formats to deliver harmonized outputs suitable for downstream meta-learning. 
+To enable systematic reuse of open-source biomedical imaging datasets (Table 2) for meta-model development, we designed and implemented a robust, extensible and automated data processing pipeline. The pipeline is built to ingest, clean, transform, and standardize heterogeneous datasets originating from various Global Repositories for Experimental Imaging (GREI), including Dataverse, Mendeley, Zenodo, and FigShare. The pipeline was designed with the dual objectives of ensuring reproducibility and reducing manual intervention, while maintaining flexibility to accommodate diverse imaging modalities, annotation conventions, and file formats to deliver harmonized outputs suitable for downstream meta-learning. 
 </div>
 
 <figure style="text-align:center;">
@@ -174,9 +184,9 @@ We adopt a meta-learning framework (Finn et al., 2017) to enable rapid adaptatio
 #### <a id="meta_training"></a>Meta Training
 
 <div style="text-align: justify; margin-bottom:2em">
-During meta-training, the Reptile algorithm is used to optimize the meta-parameters \(\theta\) of the meta-model. For each meta-epoch, a task \(T_i\) is sampled from \(\mathcal{T}\), and task-specific parameters \(\theta_i\) are initialized from \(\theta\). The task-specific support set is fed to the model, and its parameters are updated via \(K\) steps of gradient descent using the task-specific loss \(\mathcal{L}_{T_i}\) with learning rate \(\alpha\), producing adapted parameters \(\theta_i^{(K)}\). The meta-parameters are then updated in the direction of the task-adapted parameters according to
+During meta-training, the Reptile algorithm is used to optimize the meta-parameters \(\theta\) of the meta-model. For each meta-epoch, a task \(T_i\) is sampled from \(\mathcal{T}\), and task-specific parameters \(\theta_i\) are initialized from \(\theta\). The task-specific support set is fed to the base learner model, and its parameters are updated via \(K\) steps of gradient descent using the task-specific loss \(\mathcal{L}_{T_i}\) with learning rate \(\alpha\), producing adapted parameters \(\theta_i^{(K)}\). The meta-parameters are then updated in the direction of the task-adapted parameters according to
 $$\theta\gets\theta+\beta(\theta_i^{(k)}−\theta),$$
-where \(\beta\) is the meta learning rate. This procedure is repeated across tasks and meta-epochs, gradually biasing \(\theta\) toward regions of the parameter space that enable rapid adaptation across the full distribution of tasks. Once training is complete, we'll have generated a meta-model capable of fast multi-task adaptation. 
+where \(\beta\) is the meta-learning rate. This procedure is repeated across tasks and meta-epochs, gradually biasing \(\theta\) toward regions of the parameter space that enable rapid adaptation across the full distribution of tasks. Once training is complete, we'll have generated a meta-model capable of fast multi-task adaptation. 
 </div> 
 
 <figure style="text-align:center;">
@@ -231,6 +241,9 @@ We conducted ablation studies to identify optimal model hyperparameters, quantif
 
 
 ### Experiment 1 - Optimal Meta-Learning Rate
+<div style="text-align: justify; margin-bottom:2em">
+We investigated the optimal meta-learning rate, \(\beta\), needed for the meta-model to achieve the best mAP50 value. A range of \(\beta\) values were used to train the model for 40 epochs over two tasks, and its performance after training on each \(\beta\) was evaluated on the validation set. 
+</div>
 <figure style="text-align:left;">
 
   <div style="display:flex; flex-wrap:wrap; gap:1em;">
@@ -244,7 +257,7 @@ We conducted ablation studies to identify optimal model hyperparameters, quantif
 </figure>
 
 <div style="text-align: justify; margin-bottom:2em">
-Our analysis revealed that the optimal meta-learning rate,\(\beta\), was 0.05, as this value produced the highest mAP50 when averaged over the last five meta-epochs at epoch 40. While larger meta-learning rates also produced a relatively high mAP, we opted for selecting the smallest possible rate to allow for stable model convergence. A small \(\beta\) reduces the risk of overreacting to noisy meta-gradients, especially for task-wise reptile updates.
+Our analysis revealed that the optimal meta-learning rate, \(\beta\), was 0.05, as this value produced the highest mAP50 when averaged over the last five meta-epochs at epoch 40. While larger meta-learning rates also produced a relatively high mAP, we opted for selecting the smallest possible rate to allow for stable model convergence. A small \(\beta\) reduces the risk of overreacting to noisy meta-gradients, especially for task-wise reptile updates.
 </div>
 
 ### Experiment 2 - Generalizability and Task Dependence
@@ -394,7 +407,7 @@ This experiment evaluates the meta-model's performance under extreme few-shot le
 <div markdown="1" style="max-width:60%; margin:5px 5px 20px 0;">
 
 <p style="text-align:left; font-weight:400; margin:0 0 0.5rem 0;">
-Table 4:  Model performance comparison baseline transfer learning and meta-learning.
+Table 4:  Comparison of model performance between baseline transfer learning and meta-learning.
 </p>
 
 <style>
@@ -487,17 +500,18 @@ The meta-model obtained after training on 5 conventional tasks is finally fine-t
   </figure>
 </div>
   <figcaption style="margin-top:0.5em; font-style:italic;">
-    Figure 14: A comparison of meta-model performance when trained with 10 epochs but fine-tuned with (a) 20 epochs and (b) 40 epochs on a very small dataset with n=15 training samples.
+    Figure 14: Meta-model performance on the EIT validation set when trained with 10 epochs but fine-tuned with (a) 20 epochs and (b) 40 epochs on a very small dataset with n=15 training samples.
   </figcaption>
 </figure>
 
-<div style="text-align: left">
+<div style="text-align: justify">
 The results in Figure 14 indicate that a smaller number of fine-tuning epochs leads to highly unstable performance, with mAP50 values fluctuating between 1.3% and 94% over the training schedule (Figure 14a). In contrast, extending fine-tuning to 40 epochs reduces overfitting and stabilizes performance, yielding mAP50 values of at least 80-90% across meta-epochs (Figure 14b).
 </div>
 
 ## <a id="conclusion"></a>Conclusion
+<div style="text-align: justify">
 In conclusion, this research demonstrates that meta-learning, supported by a robust, extensible data processing pipeline, can effectively address the challenges of scarce training data in emerging medical imaging modalities such as EIT. Our framework enables very few-shot detection, leverages conventional imaging datasets to accelerate model development, and maintains robust performance across tasks without catastrophic forgetting. Systematic ablation studies highlight the importance of hyperparameter tuning, task selection and diversity, base learner network size and warmup schedules, and fine-tuning schedules for optimizing generalization. By combining open-source libraries for deterministic data handling, and modular workflows, our approach provides a transparent, reproducible and extendable framework for future diagnostic applications. Collectively, these findings establish a generalizable blueprint for accelerating the clinical translation of novel imaging technologies and improving patient outcomes by leveraging meta-models that preserve knowledge across diverse diagnostic tasks, especially when collecting large datasets is impractical.
-
+</div>
 
 ---
 ## <a id="references"></a>References
