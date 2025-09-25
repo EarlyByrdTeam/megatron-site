@@ -14,10 +14,18 @@ title: "MEGATRON: Meta-learning for Next-Gen Advanced Technology Realization & A
 <br><br>
 <strong>Keywords:</strong> Meta-learning, Data Reuse, Few-shot Learning, Electrical Impedance Tomography, Breast Cancer Detection
 <div style="text-align: center; margin-top: 30px;">
-  <a href="https://github.com/bindi-nagda/megatron" target="_blank" style="display:inline-block;">
-    <img src="https://img.shields.io/badge/View%20on-GitHub-blue?style=for-the-badge&logo=github&logoColor=white" alt="View on GitHub">
+  <a href="https://github.com/bindi-nagda/megatron" target="_blank" style="display:inline-block; margin-right: 10px;">
+    <img src="https://img.shields.io/badge/Code%20-GitHub-blue?style=for-the-badge&logo=github&logoColor=white" alt="Code">
+  </a>
+  <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" style="display:inline-block;
+  margin-right: 10px;">
+    <img src="https://img.shields.io/badge/License-CC%20BY--NC--SA%20-yellow.svg?style=for-the-badge" alt="License: CC BY-NC-SA 4.0">
+  </a>
+  <a href="https://zenodo.org/records/17001321" target="_blank" style="display:inline-block;">
+    <img src="https://img.shields.io/badge/DATA-EIT%20Data%20-orange.svg?style=for-the-badge" alt="License: CC BY-NC-SA 4.0">
   </a>
 </div>
+
 </div>
 
 ---
@@ -85,7 +93,20 @@ Table 1:  Hardware and software minimum requirements.
 
 TODO: Add dataset description.
 
-![Results Plot](figures/Data/Data_Summary.png){: style="max-width:100%; height:auto; display:block; margin:0; margin-right:1em;" }
+<figure style="text-align:left;">
+<div style="gap:1em; justify-content:left; align-items:flex-start;">
+  <figure style="text-align:center; margin:0;">
+    <img src="figures/Data/Data_images.png" alt="Data Images" style="max-width:100%; height:auto;"/>
+  </figure>
+
+  <figure style="text-align:center; margin:0;">
+    <img src="figures/Data/Data_names.png" alt="Data Names" style="max-width:100%; height:auto;"/>
+  </figure>
+</div>
+  <figcaption style="margin-top:0.5em; font-style:italic;">
+    Figure 1: Conventional medical imaging data examples.
+  </figcaption>
+</figure>
 
 <p style="text-align:left; font-weight:400; margin:20px 0px 0.5rem 10px;">
 Table 2:  A summary of the 8 datasets used to train a general-purpose meta-model. Datasets 1-7 are using during meta-model training, while dataset 8 is used to fine-tune the model and evaluate its few-shot object detection capabilities.
