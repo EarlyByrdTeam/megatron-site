@@ -60,11 +60,31 @@ The remainder of this paper presents our methodology, experimental results, and 
 ---
 ## <a id="methodology"></a>Methodology
 
-Our approach:
+Our methodology is organized into two interconnected pipelines.
 
-1. Pre-train backbone on conventional datasets.  
-2. Meta-train using episodic tasks (few-shot learning).  
-3. Fine-tune on target dataset (EIT). 
+**Data Processing Pipeline:**
+
+To enable robust training across diverse medical imaging modalities, we design a scalable data pipeline that integrates different repositories from GREI e.g., Dataverse, Figshare, Mendeley, Zenodo. The pipeline complies with FAIR principles, enabling automated ingestion, transformation, and storage of large, heterogeneous medical imaging datasets.  The steps are:
+
+1. Extract – Ingest raw imaging datasets from conventional modalities (e.g., MRI, X-ray, ultrasound) and Electrical Impedance Tomography (EIT) from remote URLs and online repositories.
+
+2. Transform – Normalize metadata formats, ensure consistent labeling, and remove corrupted or incomplete samples. Apply domain-specific transformations (e.g., resizing, intensity normalization, coordinate transforms) to unify datasets for downstream training.
+
+3. Load - Store the processed data in a standardized directory structure to enable easy of loading using standard dataloaders.
+
+This pipeline ensures that the downstream model is trained on high-quality, standardized input that can generalize across modalities.
+
+**Training Pipeline:**
+
+The training strategy follows a staged approach that combines pre-training, meta-training, and task-specific adaptation:
+
+1. Meta-training – Train a base learner on large-scale conventional medical imaging datasets using an episodic training schedule to mimic few-shot learning scenarios.
+
+2. Meta-Validation - Evaluate the meta-model's performance on validation sets for each task using standard performance metrics for detection tasks e.g., mean Average Precision at 50% IoU, Recall, Precision, F1-score.
+
+3. Fine-tuning – Adapt the meta-trained model to the target EIT dataset, enabling domain-specific optimization while retaining generalization ability.
+
+The training pipeline ensures easy and scalable integration with processed data, enabling meta-learning from a variety of well-established medical imaging datasets and fine-tuning on data from low-resource domains like EIT. The pipeline periodically stores model checkpoints, optimizer states and model performance on validation sets.
 
 ### <a id="requirements"></a> Requirements
 <div style="text-align: justify;">
@@ -90,8 +110,9 @@ Table 1:  Hardware and software minimum requirements.
 </div> 
 
 ### <a id="datasets"></a>Datasets
-
-TODO: Add dataset description.
+<div style="text-align: justify;">
+GREI repositories served as the primary source of training data, with open-source imaging datasets spanning mammography, ultrasound, MRI, and X-ray data across multiple anatomies including breast, brain, and chest as listed in Table 2. These were complemented by RSNA and TCIA datasets contributing an additionaly 30k chest X-ray and breast MRI images. These sources encompassed hundreds of thousands of images, ensuring broad representation of imaging patterns, resolution, grayscale intensities, tumor size and disease pathology. 
+</div>
 
 <figure style="text-align:left;">
 <div style="gap:1em; justify-content:left; align-items:flex-start;">
@@ -118,7 +139,7 @@ Table 2:  A summary of the 8 datasets used to train a general-purpose meta-model
 | MRI-Brain-Tumor | Brain Cancer | Detection | 4 | mat, jpg | 10087 | Figshare, Mendeley | [doi:10.6084/m9.figshare.1512427](https://doi.org/10.6084/m9.figshare.1512427), [doi:10.17632/zp67tkpj2y.1](https://doi.org/10.17632/zp67tkpj2y.1) |
 | Breast-Ultrasound | Breast Cancer | Segmentation | 3 | png | 683 | Mendeley | [doi:10.17632/7fvgj4jsp7.3](https://doi.org/10.17632/7fvgj4jsp7.3) |
 | CBIS-DDSM-Mammogram | Breast Cancer | Segmentation | 2 | jpg, png | 3568 | Zenodo | [doi:10.7937/K9/TCIA.2016.7O02S9CY](https://zenodo.org/records/10960991) |
-| Advanced-MRI-Breast-Lesions | Breast Cancer | Segmentation | 2 | dcm | 147 | TCIA | [doi:10.7937/C7X1-YN57](https://doi.org/10.7937/C7X1-YN57) |
+| Advanced-MRI-Breast-Lesions | Breast Cancer | Segmentation | 2 | dcm | 632 | TCIA | [doi:10.7937/C7X1-YN57](https://doi.org/10.7937/C7X1-YN57) |
 | Chest-xray | Pneumonia | Detection | 14 | png | 18000 | Zenodo | [doi:10.5281/zenodo.12721389](https://doi.org/10.5281/zenodo.12721389) |
 | RSNA-pneumonia | Pneumonia | Detection | 2 | dcm | 29684 | RSNA | [doi:10.1148/ryai.2019180041](https://pubs.rsna.org/doi/10.1148/ryai.2019180041) |
 | EIT-Novel-Data (Ours) | Breast Cancer | Detection | 2 | png | 40 | Zenodo | [doi:10.5281/zenodo.17001019](https://doi.org/10.5281/zenodo.17001019) |
@@ -545,9 +566,16 @@ In conclusion, this research demonstrates that meta-learning, supported by a rob
 ---
 ## <a id="references"></a>References
 
-1. C. Finn, P. Abbeel, and S. Levine, "Model-agnostic meta-learning for fast adaptation of deep networks," in Proc. 34th Int. Conf. on Machine Learning (ICML'17), Sydney, NSW, Australia, 2017, pp. 1126–1135.
-2. A. Nichol, J. Achiam, and J. Schulman, "On First-Order Meta-Learning Algorithms," ArXiv, vol. abs/1803.02999, 2018.
-3. T. Hospedales, A. Antoniou, P. Micaelli, and A. Storkey, "Meta-Learning in Neural Networks: A Survey," IEEE Trans. Pattern Anal. Mach. Intell., vol. 44, no. 9, pp. 5149–5169, Sep. 2022, doi: 10.1109/TPAMI.2021.3079209.
-
+1. R. L. Siegel, K. D. Miller, N. S. Wagle, and A. Jemal, "Cancer statistics, 2023," CA Cancer J. Clin., vol. 73, no. 1, pp. 17–48, Jan. 2023, doi: 10.3322/CAAC.21763.
+2. L. A. Torre, F. Bray, R. L. Siegel, J. Ferlay, J. Lortet-Tieulent, and A. Jemal, "Global cancer statistics, 2012," CA Cancer J. Clin., vol. 65, no. 2, pp. 87–108, Mar. 2015, doi: 10.3322/CAAC.21262.
+3. Milliman Research, "Lifetime health care costs for prevalent and preventable cancers," The Mesothelioma Center, 2017. [Online]. Available: https://www.asbestos.com/featured-research/lifetime-healthcare-costs/
+4. C. Finn, P. Abbeel, and S. Levine, "Model-agnostic meta-learning for fast adaptation of deep networks," in Proc. 34th Int. Conf. on Machine Learning (ICML'17), Sydney, NSW, Australia, 2017, pp. 1126–1135.
+5. A. Nichol, J. Achiam, and J. Schulman, "On First-Order Meta-Learning Algorithms," ArXiv, vol. abs/1803.02999, 2018.
+6. T. Hospedales, A. Antoniou, P. Micaelli, and A. Storkey, "Meta-Learning in Neural Networks: A Survey," IEEE Trans. Pattern Anal. Mach. Intell., vol. 44, no. 9, pp. 5149–5169, Sep. 2022, doi: 10.1109/TPAMI.2021.3079209.
+7. M. G. Marmot, D. G. Altman, D. A. Cameron, J. A. Dewar, S. G. Thompson, and M. Wilcox, "The benefits and harms of breast cancer screening: an independent review," Br. J. Cancer, vol. 108, no. 11, pp. 2205–2240, Jun. 2013, doi: 10.1038/BJC.2013.177.
+8. G. K. Singh and A. Jemal, "Socioeconomic and racial/ethnic disparities in cancer mortality, incidence, and survival in the United States, 1950–2014: Over six decades of changing patterns and widening inequalities," J. Environ. Public Health, vol. 2017, 2017, doi: 10.1155/2017/2819372.
+9. A. M. Myklebust, T. Seierstad, E. Stranden, and A. Lerdal, "Level of satisfaction during mammography screening in relation to discomfort, service provided, level of pain and breast compression," Eur. J. Radiogr., vol. 1, no. 2, pp. 66–72, Jun. 2009.
+10. R. J. Halter, A. Hartov, and K. D. Paulsen, "A broadband high-frequency electrical impedance tomography system for breast imaging," IEEE Trans. Biomed. Eng., vol. 55, no. 2 Pt 1, pp. 650–659, Feb. 2008, doi: 10.1109/TBME.2007.903516.
+11. B. Liu, B. Yang, C. Xu, J. Xia, M. Dai, Z. Ji, F. You, X. Dong, X. Shi, and F. Fu, "pyEIT: A Python-based framework for electrical impedance tomography," SoftwareX, Oct. 2018, doi: 10.1016/j.softx.2018.07.002.
 
 <p style="margin-top:7em;"></p>
