@@ -70,7 +70,7 @@ To enable robust training across diverse medical imaging modalities, we design a
 
 2. Transform – Normalize metadata formats, ensure consistent labeling, and remove corrupted or incomplete samples. Apply domain-specific transformations (e.g., resizing, intensity normalization, coordinate transforms) to unify datasets for downstream training.
 
-3. Load - Store the processed data in a standardized directory structure to enable easy of loading using standard dataloaders.
+3. Load - Store the processed data in a standardized directory structure to enable ease of loading using standard dataloaders.
 
 This pipeline ensures that the downstream model is trained on high-quality, standardized input that can generalize across modalities.
 
@@ -84,7 +84,7 @@ The training strategy follows a staged approach that combines pre-training, meta
 
 3. Fine-tuning – Adapt the meta-trained model to the target EIT dataset, enabling domain-specific optimization while retaining generalization ability.
 
-The training pipeline ensures easy and scalable integration with processed data, enabling meta-learning from a variety of well-established medical imaging datasets and fine-tuning on data from low-resource domains like EIT. The pipeline periodically stores model checkpoints, optimizer states and model performance on validation sets.
+The training pipeline ensures easy and scalable integration with processed data, enabling meta-learning from a variety of well-established medical imaging datasets and fine-tuning on data from low-resource domains like EIT. The pipeline periodically stores model checkpoints and optimizer states and records model performance on validation sets.
 
 ### <a id="requirements"></a> Requirements
 <div style="text-align: justify;">
@@ -146,7 +146,7 @@ Table 2:  A summary of the 8 datasets used to train a general-purpose meta-model
 
 <div style="text-align: justify;">
 
-Since the purpose of this study is to develop a meta-model that can specifically adapt to our novel EIT dataset in a few-shot learning scenario, it is essential to identify which datasets share the greatest similarity with the EIT data and would therefore be most likely to produce positive transfer effects during meta-model training. To evaluate dataset similarity, we employed multiple complementary approaches. First, histogram plots were generated from 50 randomly sampled grayscale images per dataset, capturing the distribution of pixel intensities from 1–254, excluding pure black and white values at 0 and 255. We then computed Wasserstein distances between the target EIT-Novel-Data histogram and all other dataset histograms to quantify distributional differences. We also generated t-SNE embeddings to visualize high-dimensional relationships between datasets. 
+Since the purpose of this study is to develop a meta-model that can specifically adapt to our novel EIT dataset in a few-shot learning scenario, it is essential to identify which datasets share the greatest similarity with the EIT data and would therefore be most likely to produce positive transfer effects during meta-model training. To evaluate dataset similarity, we employed multiple complementary approaches. First, histogram plots were generated from 50 randomly sampled grayscale images per dataset, capturing the distribution of pixel intensities from 1–254, excluding pure black and white values at 0 and 255. We then computed Wasserstein distances (Villani, 2009) between the target EIT-Novel-Data histogram and all other dataset histograms to quantify distributional differences. We also generated t-SNE embeddings (van der Maaten et al., 2008) to visualize high-dimensional relationships between datasets. 
 
 </div>
 
@@ -202,15 +202,29 @@ To enable systematic reuse of open-source biomedical imaging datasets (Table 2) 
 </figure>
 
 <div style="text-align: justify;">
-The ingestion module of the pipeline retrieves datasets using persistent URLs from repositories including Dataverse, Mendeley, Zenodo, FigShare, TCIA, and RSNA. Data were downloaded through non-interactive scripted routines, which support both API-based queries and direct downloads, and subsequently decompressed from a variety of archive formats including .tar, .tgz, .7z, and .zip. The ingestion process preserves dataset provenance and versioning information to facilitate reproducibility across different computing environments. The system is capable of handling imaging data in multiple formats, including DICOM, JPG, PNG, HDF5, MAT, and NPZ, and ensures that each dataset is unpacked and stored in a consistent directory structure for downstream processing.
+The ingestion module of the pipeline retrieves datasets using persistent URLs from repositories including Dataverse, Mendeley, Zenodo, FigShare, TCIA, and RSNA. Data were downloaded through non-interactive scripted routines, which support both API-based queries and direct downloads, and subsequently decompressed from a variety of archive formats including .tar, .tgz, .7z, and .zip. A dataset configuration file enables specification of the desired directory name for every decompressed dataset. A live progress bar displays the status of the download and extraction to users. The ingestion process preserves dataset provenance and versioning information to facilitate reproducibility across different computing environments. 
+<br><br>
+
+Following ingestion, datasets underwent a standardized cleaning and transformation workflow. All images were inspected for corruption by verifying that the headers and metadata were readable during decompression, and ensuring that each image could be successfully parsed by standard imaging libraries e.g., pydicom, PIL, OpenCV. Files that failed these checks were excluded, and datasets were further screened for outliers such as images with anomalous dimensions, empty pixel arrays, or intensity distributions inconsistent with the rest of the dataset. Any images that did not have corresponding annotation files, or vice versa, were discarded. Metadata associated with each dataset was normalized into a unified schema, allowing consistent representation of imaging modality, pathology, and annotation type, while removing unique identifiers to maintain patient anonymity. Preprocessing steps included contrast normalization, 8-bit grayscale conversion, and resizing of images to meet the requirements of downstream models. The system is capable of handling imaging data in multiple formats, including DICOM, JPG, PNG, HDF5, JPEG, MAT and NPZ. Since the datasets spanned both detection and segmentation tasks, i.e., images were accompanied with either bounding boxes or segmentation masks, annotation harmonization was performed to establish a consistent format to enable objection detection across multiple modalities. In particular, segmentation masks were converted into bounding box representations, and coordinate systems and bounding box annotations were standardized to ensure interoperability across datasets. Sanity checks using an image-label overlay routine were performed post-harmonization to ensure the transformed bounding box labels preserved their precise location relative to the anomalies in the image. For evaluation purposes, datasets lacking predefined splits were partitioned into training and validation sets using an 80/20 ratio.
 
 <br><br>
 
-Following ingestion, datasets underwent a standardized cleaning and transformation workflow. All images were inspected for corruption by verifying that the headers and metadata were readable during decompression, and ensuring that each image could be successfully parsed by standard imaging libraries e.g., pydicom, PIL, OpenCV. Files that failed these checks were excluded, and datasets were further screened for outliers such as images with anomalous dimensions, empty pixel arrays, or intensity distributions inconsistent with the rest of the dataset. Any images that did not have corresponding annotation files, or vice versa, were discarded. Metadata associated with each dataset was normalized into a unified schema, allowing consistent representation of imaging modality, pathology, and annotation type, while removing unique identifiers to maintain patient anonymity. Preprocessing steps included contrast normalization, 8-bit grayscale conversion, and resizing of images to meet the requirements of downstream models. Since the datasets spanned both detection and segmentation tasks, i.e., images were accompanied with either bounding boxes or segmentation masks, annotation harmonization was performed to establish a consistent format to enable objection detection across multiple modalities. In particular, segmentation masks were converted into bounding box representations, and coordinate systems and bounding box annotations were standardized to ensure interoperability across datasets. Sanity checks using an image-label overlay routine were performed post-harmonization to ensure the transformed bounding box labels preserved their precise location relative to the anomalies in the image. For evaluation purposes, datasets lacking predefined splits were partitioned into training and validation sets using an 80/20 ratio.
+<figure style="text-align:left;">
 
-<br><br>
+  <div style="display:flex; flex-wrap:wrap; gap:1em; justify-content:center;">
+    <img src="figures/Data/breast-ultrasound-labels.png" alt="bbox-bus" style="max-width:44%; height:auto;"/>
+    <img src="figures/Data/chest-xray-labels.png" alt="bbox-chest-xray" style="max-width:44%; height:auto;"/>
+    <img src="figures/Data/RSNA-pneuomonia-labels.png" alt="bbox-rsna" style="max-width:44%; height:auto;"/>
+    <img src="figures/Data/brain-tumor-labels.png" alt="bbox-brain-tumor" style="max-width:44%; height:auto;"/>
+  </div>
 
-The final stage of the pipeline focused on storage and retrieval. Processed datasets were stored in a standardized format, with each dataset being accompanied by a data.yaml file to inform the model of its train/val paths and class definitions. This faciliates loading and retrieving samples from each dataset using a unified dataloader suroutine. Each processed dataset can be reproduced deterministically from its original source data, as validation checks and error-handling mechanisms are incorporated at each stage of the workflow. Failed processes are logged and can be re-initiated without compromising the integrity of the processed output.
+  <figcaption style="margin-top:0.5em; font-style:italic; text-align:center">
+    Figure 5: Bounding box distribution for four of the datasets following dataset transformation. UL: Breast-ultrasound, UR: Chest-Xray, BL: RSNA-Pneumonia, BR: MRI-Brain-Tumor.
+  </figcaption>
+
+</figure>
+
+The final stage of the pipeline focuses on storage and retrieval. Processed datasets were stored in a standardized format, with all images stored as PNG and all annotations stored as TXT. Each dataset was stored using the same directory structure, consisting of a train and validation subdirectories, and accompanied by a data.yaml file to inform the model of its train/val paths and class definitions. This faciliates loading and retrieving samples from each dataset using a unified dataloader suroutine. Each processed dataset can be reproduced deterministically from its original source data, as validation checks and error-handling mechanisms are incorporated at each stage of the workflow. Failed processes are logged and can be re-initiated without compromising the integrity of the processed output.
 
 <br><br>
 
@@ -220,7 +234,7 @@ To support flexible workflows, the system includes an editable pipeline-config f
 ### <a id="meta_learn"></a>Meta Learning Algorithm
 
 <div style="text-align: justify;  margin-bottom:2em">
-We adopt a meta-learning framework (Finn et al., 2017) to enable rapid adaptation to novel tasks with limited labeled data. The goal is to learn a set of meta-parameters \(\theta\) that capture shared structure across tasks, facilitating few-shot learning on unseen tasks. In our setup, tasks are drawn from a distribution \(\mathcal{T}\), where each task \(T_i\) corresponds to a distinct dataset. To simulate a few-shot learning scenario, we employ an episodic training paradigm for each task in every meta-epoch. For each task, we sample a fixed number of examples from its training set to form the support set, which drives task-specific adaptation of the base model, and sample a fixed number of examples from the validation set to form the query set, on which the meta-model is evaluated. By using a fixed number of support and query examples per task, we ensure that each episode is standardized, which is particularly beneficial when tasks have varying numbers of samples. This standardization prevents tasks with larger datasets from dominating the meta-training process and allows the meta-model to learn representations that generalize across tasks of different sizes.
+We adopt a meta-learning framework (Finn et al., 2017) to enable rapid adaptation to novel tasks with limited labeled data. The goal is to learn a set of meta-parameters \(\theta\) that capture shared structure across tasks, facilitating few-shot learning on unseen tasks. In our setup, tasks are drawn from a distribution \(\mathcal{T}\), where each task \(T_i\) corresponds to a distinct dataset. To simulate a few-shot learning scenario, we employ an episodic training paradigm for each task in every meta-epoch. For each task, we sample a fixed number of examples from its training set to form the support set, which drives task-specific adaptation of the base model, and sample a fixed number of examples from the validation set to form the query set, on which the meta-model is evaluated. By using a fixed number of support and query examples per task, we ensure that each episode is balanced, which is particularly beneficial when tasks have varying numbers of samples. This standardization prevents tasks with larger datasets from dominating the meta-training process and allows the meta-model to learn representations that generalize across tasks of different sizes.
 </div>
 
 #### <a id="meta_training"></a>Meta Training
@@ -236,7 +250,7 @@ where \(\beta\) is the meta-learning rate. This procedure is repeated across tas
        alt="Algorithm"
        style="max-width:80%; height:auto; display:block; margin:0 auto;" />
   <figcaption style="margin-top:0.0em; font-style:italic;">
-    Figure 5: Meta-Training Algorithm
+    Figure 6a: Meta-Training Algorithm
   </figcaption>
 </figure>
 
@@ -251,7 +265,7 @@ To monitor generalization, we evaluate the meta-model on held-out task-specific 
        alt="Algorithm"
        style="max-width:80%; height:auto; display:block; margin:0 auto;" />
   <figcaption style="margin-top:0.0em; font-style:italic;">
-    Figure 6: Meta-Validation Algorithm
+    Figure 6b: Meta-Validation Algorithm
   </figcaption>
 </figure>
 
@@ -312,7 +326,7 @@ The model's performance trajectory supports the hypothesis that meta-model gener
 <figure style="text-align:center;">
   <img src="figures/Bar_Chart/bar_chart_metrics_epoch_40.png" 
        alt="Histogram"
-       style="max-width:60%; height:auto; display:block; margin:0 auto;" />
+       style="max-width:80%; height:auto; display:block; margin:0 auto;" />
   <figcaption style="margin-top:0.5em; font-style:italic;">
     Figure 8: Impact on meta-model performance (mAP50, precision, recall) as more tasks are added during meta-training. Each bar represents the average value over all 7 tasks.
   </figcaption>
@@ -339,13 +353,13 @@ The model's performance trajectory supports the hypothesis that meta-model gener
 </figure>
 
 <div style="text-align: justify;">
-The boxplots in Figure 9 provide additional granularity in the model behavior, and illustrate how different task characteristics contribute to this meta-learning dynamic. The inclusion of diverse modalities like mammography, MRI, ultrasound, and chest X-ray exposes the meta-learner to varied visual patterns, tumor sizes and boundaries, grayscale intensities, and imaging artifacts. It is interesting to see how the model behaves on tasks with varying levels of difficulty. For instance, the model maintains consistently high performance on MRI-Brain-Tumor (~0.85-0.90 mAP50) due to its high quality annotations and sharp tumor contrast. But, the model exhibits poor performance on the challenging DeepSight-2d-Mammogram dataset (~0.2-0.3 mAP50) due to its low image contrast. However, the overall model performance is still relatively high which means this challenging dataset still provides a valuable learning signal for the meta-model. Further, the performance on the Advanced-MRI-Breast-Lesion dataset is adversely affected when trained alongside RSNA-Pneumonia, with the value dropping from 0.7 to 0.25, and later recovering to 0.55 when Chest X-ray is added to the training schedule. This drop is probably because the Advanced-MRI-Breast-Lesion dataset is a small dataset that contributes a weak learning signal to the model, while the rise is probably because the Chest X-ray data may introduce regularization effects that help stabilize training.
+The boxplots in Figure 9 provide additional granularity in the model behavior, and illustrate how different task characteristics contribute to this meta-learning dynamic. The inclusion of diverse modalities like mammography, MRI, ultrasound, and chest X-ray exposes the meta-learner to varied visual patterns, tumor sizes and boundaries, grayscale intensities, and imaging artifacts. It is interesting to see how the model behaves on tasks with varying levels of difficulty. For instance, the model maintains consistently high performance on MRI-Brain-Tumor (~0.85-0.90 mAP50) due to its high quality annotations and sharp tumor contrast. But, the model exhibits poor performance on the challenging DeepSight-2d-Mammogram dataset (~0.2-0.3 mAP50) due to its low image contrast. However, the overall model performance is still relatively high which means this challenging dataset still provides a valuable learning signal for the meta-model. Further, the performance on the Advanced-MRI-Breast-Lesion dataset is adversely affected when trained alongside RSNA-Pneumonia, with the value dropping from 0.7 to 0.25, and later recovering to 0.55 when Chest X-ray is added to the training schedule. This drop is probably because the Advanced-MRI-Breast-Lesion dataset is a small dataset that contributes a weak learning signal to the model, while the rise is probably because the Chest X-ray data introduces regularization effects that help stabilize training.
 <br><br>
 These findings indicate an optimal selection of tasks with sufficient heterogeneity to improve generalization without causing destructive interference to the meta-model's learned parameters.
 </div>
 
 ### Experiment 3 - Multi-task Meta-Learning Performance
-In experiment 3, we investigate the impact of fine-tuning schedules on meta-model performance. As expected, the model shows improved performance by 4-27% across tasks when the no. of fine-tuning steps is increased from 5 to 20.
+In experiment 3, we investigated the impact of fine-tuning schedules on meta-model performance. As expected, the model showed improved performance by 4-27% across tasks when the number of fine-tuning steps was increased from 5 to 20. By doing more gradient descent steps before making a prediction on a given task, we are moving the general meta-model's parameters closer to the optima of the task at hand, which results in better performance.
 
 <figure style="text-align:left;">
 
@@ -368,7 +382,7 @@ In experiment 3, we investigate the impact of fine-tuning schedules on meta-mode
 
 ### Experiment 4 - Model Size and Warmup Schedule
 <div style="text-align: justify; margin-bottom:2em">
-In experiment 4, we investigate the impact of base learner architecture size and learning rate warmup schedule on meta-model performance. The spider plots indicate unintuitive results, whereby the larger v8s model has poorer performance than the small v8n model for all tasks except Breast-Ultrasound, though its performance is significantly improved with warmup epochs. The larger model may initially perform worse because its high capacity can cause it to overfit small, heterogeneous datasets, learning task-specific noise rather than generalizable patterns. It benefits from warmup to stabilize its deeper architecture before meta-updates can be effective.  However, the small model's performance when a warmup schedule is utilized is slightly degraded for some tasks such as MRI-Brain-Tumor, DeepSight-2d-Mammogram, Advanced-MRI-Breast-Lesion, and Chest-xray. This can be explained by the fact that since YOLOv8n has a lower capacity, it tends to learn general features rather than task-specific noise, so warmup may result in overfitting to training data.
+In experiment 4, we investigated the impact of base learner architecture size and learning rate warmup schedule on meta-model performance. The spider plots indicate unintuitive results, whereby the larger v8s model has poorer performance than the small v8n model for all tasks except Breast-Ultrasound, though its performance is significantly improved with warmup epochs. The larger model may initially perform worse because its high capacity can cause it to overfit small, heterogeneous datasets, learning task-specific noise rather than generalizable patterns. It benefits from warmup to stabilize its deeper architecture before meta-updates can be effective.  However, the small model's performance when a warmup schedule is utilized is slightly degraded for some tasks such as MRI-Brain-Tumor, DeepSight-2d-Mammogram, Advanced-MRI-Breast-Lesion, and Chest-xray. This can be explained by the fact that since YOLOv8n has a lower capacity, it tends to learn general features rather than task-specific noise, so warmup may result in overfitting to training data.
 </div>
 
 <figure style="text-align:left;">
@@ -577,5 +591,8 @@ In conclusion, this research demonstrates that meta-learning, supported by a rob
 9. A. M. Myklebust, T. Seierstad, E. Stranden, and A. Lerdal, "Level of satisfaction during mammography screening in relation to discomfort, service provided, level of pain and breast compression," Eur. J. Radiogr., vol. 1, no. 2, pp. 66–72, Jun. 2009.
 10. R. J. Halter, A. Hartov, and K. D. Paulsen, "A broadband high-frequency electrical impedance tomography system for breast imaging," IEEE Trans. Biomed. Eng., vol. 55, no. 2 Pt 1, pp. 650–659, Feb. 2008, doi: 10.1109/TBME.2007.903516.
 11. B. Liu, B. Yang, C. Xu, J. Xia, M. Dai, Z. Ji, F. You, X. Dong, X. Shi, and F. Fu, "pyEIT: A Python-based framework for electrical impedance tomography," SoftwareX, Oct. 2018, doi: 10.1016/j.softx.2018.07.002.
+12. G. Jocher, A. Chaurasia, and J. Qiu, "YOLOv8: Ultralytics Official Release," Ultralytics, 2023.
+13. C. Villani, Optimal Transport: Old and New, Springer, 2009, doi: 10.1007/978-3-540-71050-9.
+14. L. van der Maaten and G. Hinton, “Visualizing data using t-SNE,” J. Mach. Learn. Res., vol. 9, pp. 2579–2605, Nov. 2008.
 
 <p style="margin-top:7em;"></p>
