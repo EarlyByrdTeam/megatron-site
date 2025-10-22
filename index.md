@@ -76,7 +76,7 @@ This pipeline ensures that the downstream model is trained on high-quality, stan
 
 **Training Pipeline:**
 
-The training strategy follows a staged approach that combines pre-training, meta-training, and task-specific adaptation:
+The training strategy follows a staged approach that combines meta-training, meta-validation and fine-tuning for task-specific adaptation:
 
 1. Meta-training – Train a base learner on large-scale conventional medical imaging datasets using an episodic training schedule to mimic few-shot learning scenarios.
 
@@ -130,7 +130,7 @@ GREI repositories served as the primary source of training data, with open-sourc
 </figure>
 
 <p style="text-align:left; font-weight:400; margin:20px 0px 0.5rem 10px;">
-Table 2:  A summary of the 8 datasets used to train a general-purpose meta-model. Datasets 1-7 are using during meta-model training, while dataset 8 is used to fine-tune the model and evaluate its few-shot object detection capabilities.
+Table 1:  A summary of the 8 datasets used to train a general-purpose meta-model. Datasets 1-7 are using during meta-model training, while dataset 8 is used to fine-tune the model and evaluate its few-shot object detection capabilities.
 </p>
 
 | Name | Pathology | Annotation Type | Classes | Image Format | No. of Samples | Source | DOI |
